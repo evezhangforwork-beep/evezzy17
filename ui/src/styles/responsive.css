@@ -1,0 +1,220 @@
+/* ------------------------------------------------------------ responsive */
+
+/*
+ * The staging cloth is a scale model of the table; its captions are too
+ * small to read at any width, so the position key beneath it carries the
+ * names and the cloth keeps only the numerals.
+ */
+.staging .slot-caption {
+  display: none;
+}
+
+.staging .position-key {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+
+@media (max-width: 819px) {
+  .draw-header,
+  .reading-header {
+    align-items: flex-start;
+  }
+  .staging__header,
+  .deck-section__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .reading-cloth--full {
+    --slot-width: clamp(48px, 11vw, 80px);
+
+    aspect-ratio: 4 / 5;
+    min-height: 560px;
+  }
+  .reading-cloth--full.reading-cloth--sparse {
+    --slot-width: clamp(74px, 14vw, 110px);
+
+    aspect-ratio: 16 / 9;
+    min-height: 330px;
+  }
+  .reading-cloth--compact {
+    --slot-width: clamp(44px, 8vw, 60px);
+
+    aspect-ratio: 16 / 9;
+  }
+  .reading-cloth--compact.reading-cloth--sparse {
+    --slot-width: clamp(56px, 12vw, 80px);
+  }
+  .slot-caption {
+    width: 240%;
+    margin-inline: -70%;
+  }
+}
+
+@media (max-width: 560px) {
+  .draw-header,
+  .reading-header,
+  .draw-toolbar,
+  .reveal-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .draw-toolbar,
+  .reveal-toolbar {
+    gap: 12px;
+  }
+  .selection-meter {
+    align-self: flex-start;
+  }
+  .reading-cloth--full {
+    --slot-width: clamp(44px, 12vw, 64px);
+
+    min-height: 520px;
+  }
+  .reading-cloth--full.reading-cloth--sparse {
+    --slot-width: clamp(64px, 18vw, 90px);
+
+    aspect-ratio: 1.15;
+    min-height: 280px;
+  }
+  .reading-cloth--compact {
+    --slot-width: clamp(44px, 12vw, 60px);
+
+    min-height: 280px;
+  }
+  .reading-cloth--compact.reading-cloth--sparse {
+    --slot-width: clamp(56px, 16vw, 80px);
+  }
+  /*
+   * On a phone the card is the art alone. Its position lives in the key
+   * below, and name and orientation join it there once the card is turned.
+   */
+  .reading-shell .slot-caption,
+  .reading-card__caption {
+    display: none;
+  }
+  .reading-card {
+    aspect-ratio: 2 / 3;
+  }
+  .reading-card__face {
+    grid-template-rows: 1fr;
+  }
+  .position-key {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
+  }
+  .deck-section {
+    padding-top: 14px;
+  }
+  /*
+   * Two columns, in document order: the primary action comes first and
+   * spans the row, the secondaries share the next. A lone secondary takes
+   * the full row rather than half of it. No `order` — the visual sequence
+   * is the focus sequence.
+   */
+  .toolbar-actions,
+  .reveal-toolbar > div,
+  .ritual-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .toolbar-actions > .primary-action,
+  .reveal-toolbar > div > .primary-action,
+  .ritual-actions > .primary-action,
+  .toolbar-actions > :nth-child(2):last-child,
+  .reveal-toolbar > div > :nth-child(2):last-child,
+  .ritual-actions > :nth-child(2):last-child {
+    grid-column: 1 / -1;
+  }
+  .ritual-actions {
+    width: 100%;
+  }
+  .toolbar-actions > button,
+  .reveal-toolbar > div > button,
+  .ritual-actions > button {
+    min-width: 0;
+    padding-inline: 12px;
+  }
+  .card-dialog {
+    grid-template-columns: 1fr;
+    max-height: calc(100dvh - 24px);
+  }
+  .dialog-art {
+    min-height: 0;
+    height: min(46vh, 390px);
+  }
+  .dialog-copy {
+    padding: 24px;
+  }
+}
+
+.reading-cloth--full.reading-cloth--sparse[data-card-count="1"] {
+  --slot-width: clamp(124px, 22vw, 190px);
+}
+
+/* --------------------------------------------------------- reduced motion */
+
+/*
+ * Designed alternatives first: the ritual still works, the cards still turn,
+ * nothing depends on an animation having run. The blanket rule below is only
+ * a backstop for anything not named here.
+ */
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * The ritual opens directly on an operable cut: no beat of the shuffle,
+   * no entrance on the slider, and the packet lifts the instant the reader
+   * moves it.
+   */
+  .ritual-pile.is-shuffling .ritual-pile__card,
+  .ritual-pile.is-shuffling .ritual-shade,
+  .ritual-pile.is-shuffling .ritual-aura__ring,
+  .ritual-cut {
+    animation: none;
+  }
+  .ritual-pile__card {
+    transition: none;
+  }
+
+  /* Cross-fade instead of a 3D flip. */
+  .reading-card__inner {
+    transform: none !important;
+  }
+  .reading-card__back,
+  .reading-card__face {
+    backface-visibility: visible;
+    transition: opacity 140ms linear;
+  }
+  .reading-card__face {
+    opacity: 0;
+    transform: none;
+  }
+  .reading-card.is-revealed .reading-card__face {
+    opacity: 1;
+  }
+  .reading-card.is-revealed .reading-card__back {
+    opacity: 0;
+  }
+
+  .arc-fan::before,
+  .arc-card.is-drawn::after,
+  .cloth-slot.is-dealing::before,
+  .cloth-slot.is-dealing::after,
+  .cloth-slot.is-dealing .staged-card::before,
+  .reading-card.is-revealed::before {
+    display: none;
+  }
+
+  .reading-card.is-revealed .reading-card__face {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

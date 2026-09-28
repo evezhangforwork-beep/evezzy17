@@ -1,0 +1,371 @@
+/**
+ * Input validation utilities for the Tarot MCP Server
+ */
+
+import { SPREAD_TYPES } from "./types.js";
+
+/**
+ * Validation result type
+ */
+export interface ValidationResult<T> {
+  success: boolean;
+  data?: T;
+  errors: string[];
+}
+
+/**
+ * Generic validator function type
+ */
+export type Validator<T> = (value: unknown) => ValidationResult<T>;
+
+/**
+ * Creates a successful validation result
+ */
+function success<T>(data: T): ValidationResult<T> {
+  return { success: true, data, errors: [] };
+}
+
+/**
+ * Creates a failed validation result
+ */
+function failure<T>(errors: string[]): ValidationResult<T> {
+  return { success: false, errors };
+}
+
+/**
+ * Validates that a value is a non-empty string
+ */
+export const validateString: Validator<string> = (value: unknown) => {
+  if (typeof value !== "string") {
+    return failure([`Expected string, got ${typeof value}`]);
+  }
+  if (value.trim().length === 0) {
+    return failure(["String cannot be empty"]);
+  }
+  return success(value.trim());
+};
+
+/**
+ * Validates that a value is within a specific range
+ */
+export function validateRange(min: number, max: number): Validator<number> {
+  return (value: unknown) => {
+    if (typeof value !== "number") {
+      return failure([`Expected number, got ${typeof value}`]);
+    }
+    if (!Number.isInteger(value)) {
+      return failure(["Expected integer"]);
+    }
+
+    if (value < min || value > max) {
+      return failure([`Expected number between ${min} and ${max}, got ${value}`]);
+    }
+    return success(value);
+  };
+}
+
+/**
+ * Validates that a value is one of the allowed enum values
+ */
+export function validateEnum<T extends string>(
+  allowedValues: readonly T[],
+  enumName: string
+): Validator<T> {
+  return (value: unknown) => {
+    const stringResult = validateString(value);
+    if (!stringResult.success) {
+      return failure(stringResult.errors);
+    }
+
+    const str = stringResult.data!;
+    if (!allowedValues.includes(str as T)) {
+      return failure([
+        `Invalid ${enumName}: "${str}". Allowed values: ${allowedValues.join(", ")}`
+      ]);
+    }
+    return success(str as T);
+  };
+}
+
+/**
+ * Validates card orientation
+ */
+export const validateCardOrientation = validateEnum(
+  ["upright", "reversed"] as const,
+  "card orientation"
+);
+
+/**
+ * Validates card category
+ */
+export const validateCardCategory = validateEnum(
+  ["all", "major_arcana", "minor_arcana", "wands", "cups", "swords", "pentacles"] as const,
+  "card category"
+);
+
+/**
+ * Validates spread type
+ */
+export const validateSpreadType = validateEnum(SPREAD_TYPES, "spread type");
+
+/**
+ * Validates an optional reading-session ID.
+ *
+ * Some tool-calling clients populate optional string fields with an empty
+ * string, `"new"`, or a human-readable label instead of omitting the field.
+ * Only IDs issued by this server begin with `session_`; all other strings are
+ * therefore safe to interpret as a request for a new session. A server-issued
+ * but stale `session_...` ID is preserved so the caller still gets the useful
+ * SessionNotFoundError instead of silently losing continuity.
+ */
+export const validateOptionalSessionId: Validator<string | undefined> = (
+  value: unknown,
+) => {
+  if (value === undefined || value === null) {
+    return success(undefined);
+  }
+  if (typeof value === "string") {
+    const candidate = value.trim();
+    if (!candidate.startsWith("session_")) {
+      return success(undefined);
+    }
+  }
+  return validateString(value);
+};
+
+/**
+ * Validates card name with fuzzy matching support
+ */
+export const validateCardName: Validator<string> = (value: unknown) => {
+  const stringResult = validateString(value);
+  if (!stringResult.success) {
+    return stringResult;
+  }
+
+  const cardName = stringResult.data!;
+
+  // Basic validation - card names should be reasonable length
+  if (cardName.length > 50) {
+    return failure(["Card name too long (max 50 characters)"]);
+  }
+
+  // Check for potentially harmful characters
+  if (/[<>{}\\]/.test(cardName)) {
+    return failure(["Card name contains invalid characters"]);
+  }
+
+  return success(cardName);
+};
+
+/**
+ * Validates search query parameters
+ */
+export interface SearchParams {
+  keyword?: string;
+  suit?: string;
+  arcana?: "major" | "minor";
+  element?: "fire" | "water" | "air" | "earth";
+  number?: number;
+  orientation?: "upright" | "reversed";
+  limit?: number;
+}
+
+export const validateSearchParams: Validator<SearchParams> = (value: unknown) => {
+  if (typeof value !== "object" || value === null) {
+    return failure(["Expected object for search parameters"]);
+  }
+
+  const params = value as Record<string, unknown>;
+  const result: SearchParams = {};
+  const errors: string[] = [];
+
+  // Validate optional keyword
+  if (params.keyword !== undefined) {
+    const keywordResult = validateString(params.keyword);
+    if (!keywordResult.success) {
+      errors.push(`keyword: ${keywordResult.errors.join(", ")}`);
+    } else {
+      result.keyword = keywordResult.data;
+    }
+  }
+
+  // Validate optional suit
+  if (params.suit !== undefined) {
+    const suitResult = validateEnum(
+      ["wands", "cups", "swords", "pentacles"] as const,
+      "suit"
+    )(params.suit);
+    if (!suitResult.success) {
+      errors.push(`suit: ${suitResult.errors.join(", ")}`);
+    } else {
+      result.suit = suitResult.data;
+    }
+  }
+
+  // Validate optional arcana
+  if (params.arcana !== undefined) {
+    const arcanaResult = validateEnum(
+      ["major", "minor"] as const,
+      "arcana"
+    )(params.arcana);
+    if (!arcanaResult.success) {
+      errors.push(`arcana: ${arcanaResult.errors.join(", ")}`);
+    } else {
+      result.arcana = arcanaResult.data;
+    }
+  }
+
+  // Validate optional element
+  if (params.element !== undefined) {
+    const elementResult = validateEnum(
+      ["fire", "water", "air", "earth"] as const,
+      "element"
+    )(params.element);
+    if (!elementResult.success) {
+      errors.push(`element: ${elementResult.errors.join(", ")}`);
+    } else {
+      result.element = elementResult.data;
+    }
+  }
+
+  // Validate optional number
+  if (params.number !== undefined) {
+    const numberResult = validateRange(0, 21)(params.number);
+    if (!numberResult.success) {
+      errors.push(`number: ${numberResult.errors.join(", ")}`);
+    } else {
+      result.number = numberResult.data;
+    }
+  }
+
+  // Validate optional orientation
+  if (params.orientation !== undefined) {
+    const orientationResult = validateCardOrientation(params.orientation);
+    if (!orientationResult.success) {
+      errors.push(`orientation: ${orientationResult.errors.join(", ")}`);
+    } else {
+      result.orientation = orientationResult.data;
+    }
+  }
+
+  // Validate optional limit
+  if (params.limit !== undefined) {
+    const limitResult = validateRange(1, 100)(params.limit);
+    if (!limitResult.success) {
+      errors.push(`limit: ${limitResult.errors.join(", ")}`);
+    } else {
+      result.limit = limitResult.data;
+    }
+  }
+
+  if (errors.length > 0) {
+    return failure(errors);
+  }
+
+  return success(result);
+};
+
+/**
+ * Validates custom spread creation parameters
+ */
+export interface CustomSpreadParams {
+  name: string;
+  description: string;
+  positions: Array<{
+    name: string;
+    meaning: string;
+  }>;
+}
+
+export const validateCustomSpreadParams: Validator<CustomSpreadParams> = (value: unknown) => {
+  if (typeof value !== "object" || value === null) {
+    return failure(["Expected object for custom spread parameters"]);
+  }
+
+  const params = value as Record<string, unknown>;
+  const errors: string[] = [];
+  const validatedPositions: Array<{ name: string; meaning: string }> = [];
+
+  // Validate name
+  const nameResult = validateString(params.name);
+  if (!nameResult.success) {
+    errors.push(`name: ${nameResult.errors.join(", ")}`);
+  }
+
+  // Validate description
+  const descriptionResult = validateString(params.description);
+  if (!descriptionResult.success) {
+    errors.push(`description: ${descriptionResult.errors.join(", ")}`);
+  }
+
+  // Validate positions array
+  if (!Array.isArray(params.positions)) {
+    errors.push("positions: Expected array");
+  } else {
+    const positions = params.positions;
+
+    if (positions.length === 0) {
+      errors.push("positions: Array cannot be empty");
+    } else if (positions.length > 15) {
+      errors.push("positions: Maximum 15 positions allowed");
+    } else {
+      // Validate each position
+      positions.forEach((position, index) => {
+        if (typeof position !== "object" || position === null) {
+          errors.push(`positions[${index}]: Expected object`);
+          return;
+        }
+
+        const pos = position as Record<string, unknown>;
+
+        const posNameResult = validateString(pos.name);
+        if (!posNameResult.success) {
+          errors.push(`positions[${index}].name: ${posNameResult.errors.join(", ")}`);
+        }
+
+        const posMeaningResult = validateString(pos.meaning);
+        if (!posMeaningResult.success) {
+          errors.push(`positions[${index}].meaning: ${posMeaningResult.errors.join(", ")}`);
+        }
+
+        if (posNameResult.success && posMeaningResult.success) {
+          validatedPositions.push({
+            name: posNameResult.data!,
+            meaning: posMeaningResult.data!,
+          });
+        }
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    return failure(errors);
+  }
+
+  return success({
+    name: nameResult.data!,
+    description: descriptionResult.data!,
+    positions: validatedPositions,
+  });
+};
+
+/** Longest free-text input retained; everything beyond is truncated. */
+const MAX_SANITIZED_LENGTH = 2000;
+
+/**
+ * Normalize free-text input: strip control characters, trim, and cap the
+ * length. Output is only ever embedded in Markdown returned to MCP/REST
+ * clients (never rendered as HTML), so natural-language characters like
+ * "<" or ">" pass through untouched.
+ */
+export function sanitizeString(input: string): string {
+  return (
+    input
+      // Strip C0 control characters (keeping \t, \n, \r) and DEL
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+      .trim()
+      .slice(0, MAX_SANITIZED_LENGTH)
+  );
+}
+

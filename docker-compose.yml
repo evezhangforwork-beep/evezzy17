@@ -1,0 +1,23 @@
+services:
+  tarot-mcp:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+      # Persist reading sessions across restarts/redeploys.
+      - SESSION_STORE_PATH=/data/sessions.json
+      # The private tunnel override supplies Bearer auth and allowed hosts.
+      # Keep browser access local, or use your own SSH local forwarding.
+    volumes:
+      - tarot-sessions:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  tarot-sessions:

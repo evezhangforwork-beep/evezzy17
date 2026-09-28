@@ -1,0 +1,625 @@
+import { spawn, ChildProcessWithoutNullStreams } from "node:child_process";
+import fs from "node:fs/promises";
+import { request } from "node:http";
+import os from "node:os";
+import path from "node:path";
+
+const PORT = 3379;
+const SECURED_PORT = 3380;
+const BASE_URL = `http://127.0.0.1:${PORT}`;
+const SECURED_BASE_URL = `http://127.0.0.1:${SECURED_PORT}`;
+const AUTH_TOKEN = "test-secret-token";
+const LATEST_PROTOCOL_VERSION = "2025-06-18";
+
+async function waitForHealth(
+  baseUrl: string,
+  getFailureDetails: () => string | undefined,
+): Promise<void> {
+  const deadline = Date.now() + 15000;
+
+  while (Date.now() < deadline) {
+    const failureDetails = getFailureDetails();
+    if (failureDetails) {
+      throw new Error(failureDetails);
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/health`);
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Server is still starting.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error(
+    `HTTP server did not become healthy in time\n${getFailureDetails() || ""}`,
+  );
+}
+
+function mcpInitializeRequest(id: number) {
+  return {
+    jsonrpc: "2.0",
+    id,
+    method: "initialize",
+    params: {
+      protocolVersion: LATEST_PROTOCOL_VERSION,
+      capabilities: {},
+      clientInfo: {
+        name: "jest-smoke",
+        version: "1.0.0",
+      },
+    },
+  };
+}
+
+function rawHttpStatus(
+  port: number,
+  requestPath: string,
+  headers: Record<string, string>,
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const req = request(
+      {
+        hostname: "127.0.0.1",
+        port,
+        path: requestPath,
+        method: "GET",
+        headers,
+      },
+      (response) => {
+        response.resume();
+        response.once("end", () => resolve(response.statusCode ?? 0));
+      },
+    );
+    req.once("error", reject);
+    req.end();
+  });
+}
+
+describe("HTTP MCP server", () => {
+  let serverProcess: ChildProcessWithoutNullStreams;
+  let serverExit:
+    | {
+        code: number | null;
+        signal: NodeJS.Signals | null;
+      }
+    | undefined;
+  let serverStderr = "";
+  let tsxTempDir: string | undefined;
+
+  beforeAll(async () => {
+    const tsxBin = path.join(process.cwd(), "node_modules", ".bin", "tsx");
+    tsxTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tarot-mcp-tsx-"));
+    serverProcess = spawn(
+      tsxBin,
+      ["src/index.ts", "--transport", "http", "--port", String(PORT)],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          TMPDIR: tsxTempDir,
+        },
+        stdio: "pipe",
+      },
+    );
+    serverProcess.stderr.on("data", (chunk) => {
+      serverStderr += chunk.toString();
+    });
+    serverProcess.once("exit", (code, signal) => {
+      serverExit = { code, signal };
+    });
+
+    await waitForHealth(BASE_URL, () => {
+      if (!serverExit) {
+        return undefined;
+      }
+
+      return [
+        `HTTP server process exited before becoming healthy.`,
+        `exitCode=${serverExit.code} signal=${serverExit.signal}`,
+        serverStderr.trim(),
+      ]
+        .filter(Boolean)
+        .join("\n");
+    });
+  }, 20000);
+
+  afterAll(async () => {
+    if (serverProcess && serverExit === undefined) {
+      serverProcess.kill("SIGTERM");
+      await new Promise((resolve) => serverProcess.once("exit", resolve));
+    }
+
+    if (tsxTempDir) {
+      await fs.rm(tsxTempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("serves health, info, and spreads endpoints", async () => {
+    const health = await fetch(`${BASE_URL}/health`);
+    expect(health.status).toBe(200);
+    await expect(health.json()).resolves.toMatchObject({
+      status: "ok",
+    });
+
+    const info = await fetch(`${BASE_URL}/api/info`);
+    const infoJson = await info.json();
+    expect(infoJson.tools).toHaveLength(16);
+    expect(infoJson.capabilities).toEqual(["tools", "resources", "prompts"]);
+
+    const spreads = await fetch(`${BASE_URL}/api/spreads`);
+    const spreadsJson = await spreads.json();
+    expect(spreadsJson.spreads.length).toBeGreaterThanOrEqual(20);
+    expect(spreadsJson.spreads[0]).toHaveProperty("type");
+
+    const localizedSpreads = await fetch(`${BASE_URL}/api/spreads?language=zh`);
+    const localizedSpreadsJson = await localizedSpreads.json();
+    expect(localizedSpreadsJson.spreads[0].name).toContain("单牌");
+
+    const invalidLanguage = await fetch(`${BASE_URL}/api/spreads?language=fr`);
+    expect(invalidLanguage.status).toBe(400);
+  });
+
+  it("serves the built visual page publicly with a same-origin-only CSP", async () => {
+    const root = await fetch(`${BASE_URL}/`, { redirect: "manual" });
+    expect(root.status).toBe(302);
+    expect(root.headers.get("location")).toBe("/draw/");
+
+    const response = await fetch(`${BASE_URL}/draw`);
+    const hasBuiltUi = await fs
+      .access(path.join(process.cwd(), "dist", "ui", "web", "index.html"))
+      .then(() => true)
+      .catch(() => false);
+
+    expect(response.status).toBe(hasBuiltUi ? 200 : 503);
+    if (hasBuiltUi) {
+      expect(response.headers.get("content-type")).toContain("text/html");
+      expect(response.headers.get("cache-control")).toContain("public");
+      expect(response.headers.get("content-security-policy")).toContain(
+        "connect-src 'self'",
+      );
+      const csp = response.headers.get("content-security-policy") ?? "";
+      expect(csp).toContain("font-src 'self' data:");
+      expect(csp).not.toMatch(/fonts\.(?:googleapis|gstatic)\.com/);
+      const html = await response.text();
+      expect(html).toContain('<div id="root"></div>');
+      expect(html).toMatch(/rel=["']icon["'][^>]+data:image\/svg\+xml/);
+    }
+  });
+
+  it("serves card listing and card detail endpoints", async () => {
+    const cards = await fetch(`${BASE_URL}/api/cards?category=major_arcana`);
+    expect(cards.status).toBe(200);
+    const cardsJson = await cards.json();
+    expect(cardsJson.result).toContain("Major Arcana (22 cards)");
+
+    const card = await fetch(
+      `${BASE_URL}/api/cards/${encodeURIComponent("The Fool")}?orientation=reversed`,
+    );
+    expect(card.status).toBe(200);
+    const cardJson = await card.json();
+    expect(cardJson.result).toContain("# The Fool (Reversed)");
+
+    const badCategory = await fetch(`${BASE_URL}/api/cards?category=swirls`);
+    expect(badCategory.status).toBe(400);
+
+    const localizedCard = await fetch(
+      `${BASE_URL}/api/cards/${encodeURIComponent("愚者")}?language=zh`,
+    );
+    expect(localizedCard.status).toBe(200);
+    const localizedCardJson = await localizedCard.json();
+    expect(localizedCardJson.result).toContain("愚者（The Fool）");
+  });
+
+  it("exposes every MCP tool through the generic REST tool endpoint", async () => {
+    const search = await fetch(`${BASE_URL}/api/tools/search_cards`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ keyword: "全新开始", language: "zh" }),
+    });
+    expect(search.status).toBe(200);
+    const searchJson = await search.json();
+    expect(searchJson.result).toContain("愚者（The Fool）");
+    expect(searchJson.structured.totalMatches).toBeGreaterThan(0);
+
+    const unknown = await fetch(`${BASE_URL}/api/tools/not_a_tool`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(unknown.status).toBe(404);
+
+    const invalidBody = await fetch(`${BASE_URL}/api/tools/search_cards`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "[]",
+    });
+    expect(invalidBody.status).toBe(400);
+  });
+
+  it("returns a structured reading object beside the Markdown on /api/reading", async () => {
+    const response = await fetch(`${BASE_URL}/api/reading`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ spreadType: "single_card", question: "Data?" }),
+    });
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.result).toContain("# Single Card Reading");
+    expect(json.reading.readingId).toMatch(/^reading_/);
+    expect(json.reading.cards).toHaveLength(1);
+
+    const localized = await fetch(`${BASE_URL}/api/reading`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        spreadType: "single_card",
+        question: "今天有什么指引？",
+        language: "zh",
+      }),
+    });
+    expect(localized.status).toBe(200);
+    const localizedJson = await localized.json();
+    expect(localizedJson.result).toContain("塔罗解读");
+  });
+
+  it("supports the two-stage visual reading REST workflow", async () => {
+    const begin = await fetch(`${BASE_URL}/api/visual-readings`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        readingKind: "spread",
+        spreadType: "three_card",
+        question: "What should I choose next?",
+        language: "en",
+      }),
+    });
+    expect(begin.status).toBe(201);
+    const beginJson = await begin.json();
+    expect(beginJson.draw.drawId).toMatch(/^draw_/);
+    expect(beginJson.draw.requiredCount).toBe(3);
+    expect(beginJson.draw.slots).toHaveLength(78);
+    expect(beginJson.draw.deck.slots).toEqual(beginJson.draw.slots);
+    expect(JSON.stringify(beginJson.draw.slots)).not.toMatch(
+      /cardId|orientation|meaning/,
+    );
+
+    const selectedSlotIds = beginJson.draw.slots
+      .slice(0, 3)
+      .map((slot: { slotId: string }) => slot.slotId);
+    const wrongCount = await fetch(
+      `${BASE_URL}/api/visual-readings/${beginJson.draw.drawId}/confirm`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ selectedSlotIds: selectedSlotIds.slice(0, 2) }),
+      },
+    );
+    expect(wrongCount.status).toBe(400);
+    await expect(wrongCount.json()).resolves.toMatchObject({
+      code: "INVALID_SELECTION_COUNT",
+    });
+
+    const confirmUrl = `${BASE_URL}/api/visual-readings/${beginJson.draw.drawId}/confirm`;
+    const confirm = await fetch(confirmUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ selectedSlotIds }),
+    });
+    expect(confirm.status).toBe(200);
+    const confirmedJson = await confirm.json();
+    expect(confirmedJson.reading.drawId).toBe(beginJson.draw.drawId);
+    expect(confirmedJson.reading.cards).toHaveLength(3);
+    expect(confirmedJson.reading.interpretation.length).toBeGreaterThan(100);
+    expect(confirmedJson.result).toContain(
+      confirmedJson.reading.interpretation,
+    );
+    expect(confirmedJson.reading.cards[0].imageUri).toMatch(
+      /^\/assets\/cards\/midnight-art-nouveau-v1\/.+\.webp$/,
+    );
+
+    const retry = await fetch(confirmUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ selectedSlotIds }),
+    });
+    expect(retry.status).toBe(200);
+    const retryJson = await retry.json();
+    expect(retryJson.reading.readingId).toBe(confirmedJson.reading.readingId);
+
+    const conflicting = await fetch(confirmUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ selectedSlotIds: [...selectedSlotIds].reverse() }),
+    });
+    expect(conflicting.status).toBe(409);
+    await expect(conflicting.json()).resolves.toMatchObject({
+      code: "DRAW_ALREADY_CONFIRMED",
+    });
+  });
+
+  it("returns HTTP 400 for invalid reading parameters", async () => {
+    const response = await fetch(`${BASE_URL}/api/reading`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ spreadType: "not_a_spread", question: "Hi?" }),
+    });
+
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toContain("Invalid spreadType");
+  });
+
+  it("rejects non-allowlisted browser origins and accepts localhost origins", async () => {
+    const rejected = await fetch(`${BASE_URL}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+        origin: "http://evil.example.com",
+      },
+      body: JSON.stringify(mcpInitializeRequest(99)),
+    });
+    expect(rejected.status).toBe(403);
+
+    const allowed = await fetch(`${BASE_URL}/api/info`, {
+      headers: { origin: "http://localhost:5173" },
+    });
+    expect(allowed.status).toBe(200);
+
+    // WHATWG fetch implementations may silently replace the Host header, so
+    // use the raw Node HTTP client to exercise a real proxied same-origin pair.
+    const sameOriginStatus = await rawHttpStatus(PORT, "/api/info", {
+      host: `tarot.example:${PORT}`,
+      origin: `http://tarot.example:${PORT}`,
+    });
+    expect(sameOriginStatus).toBe(200);
+  });
+
+  it("answers malformed JSON with a JSON error instead of an HTML page", async () => {
+    const mcpResponse = await fetch(`${BASE_URL}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+      },
+      body: "{ not json",
+    });
+    expect(mcpResponse.status).toBe(400);
+    expect(mcpResponse.headers.get("content-type")).toContain(
+      "application/json",
+    );
+    const mcpJson = await mcpResponse.json();
+    expect(mcpJson.error.code).toBe(-32700);
+
+    const restResponse = await fetch(`${BASE_URL}/api/reading`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{ not json",
+    });
+    expect(restResponse.status).toBe(400);
+    expect(restResponse.headers.get("content-type")).toContain(
+      "application/json",
+    );
+    const restJson = await restResponse.json();
+    expect(restJson.error).toContain("Invalid JSON");
+  });
+
+  it("answers oversized bodies with HTTP 413", async () => {
+    const response = await fetch(`${BASE_URL}/api/reading`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: `{"question": "${"a".repeat(5 * 1024 * 1024)}"}`,
+    });
+    expect(response.status).toBe(413);
+  });
+
+  it("handles Streamable HTTP initialize, initialized, and tools/list", async () => {
+    const initializeResponse = await fetch(`${BASE_URL}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(mcpInitializeRequest(1)),
+    });
+
+    expect(initializeResponse.status).toBe(200);
+    const sessionId = initializeResponse.headers.get("mcp-session-id");
+    expect(sessionId).toBeTruthy();
+
+    const initializeJson = await initializeResponse.json();
+    expect(initializeJson.result.serverInfo.name).toBe("tarot-mcp-server");
+
+    const initializedResponse = await fetch(`${BASE_URL}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+        "mcp-session-id": sessionId!,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "notifications/initialized",
+      }),
+    });
+    expect([200, 202]).toContain(initializedResponse.status);
+
+    const listResponse = await fetch(`${BASE_URL}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+        "mcp-session-id": sessionId!,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/list",
+        params: {},
+      }),
+    });
+
+    expect(listResponse.status).toBe(200);
+    const listJson = await listResponse.json();
+    expect(
+      listJson.result.tools.map((tool: { name: string }) => tool.name),
+    ).toContain("list_available_spreads");
+
+    const callResponse = await fetch(`${BASE_URL}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+        "mcp-session-id": sessionId!,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: {
+          name: "list_available_spreads",
+          arguments: {},
+        },
+      }),
+    });
+
+    expect(callResponse.status).toBe(200);
+    const callJson = await callResponse.json();
+    expect(callJson.result.content[0].text).toContain(
+      "# Available Tarot Spreads",
+    );
+  });
+
+  it("routes legacy SSE messages through /messages", async () => {
+    const controller = new AbortController();
+    const sseResponse = await fetch(`${BASE_URL}/sse`, {
+      headers: {
+        accept: "text/event-stream",
+      },
+      signal: controller.signal,
+    });
+
+    expect(sseResponse.status).toBe(200);
+    const reader = sseResponse.body!.getReader();
+    const chunk = await reader.read();
+    const text = new TextDecoder().decode(chunk.value);
+    const endpoint = text.match(/data: (\/messages\?sessionId=[^\n]+)/)?.[1];
+    expect(endpoint).toBeTruthy();
+
+    const postResponse = await fetch(`${BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(mcpInitializeRequest(3)),
+    });
+
+    expect(postResponse.status).toBe(202);
+    controller.abort();
+  });
+});
+
+describe("HTTP MCP server with auth and rate limiting", () => {
+  let serverProcess: ChildProcessWithoutNullStreams;
+  let serverExit:
+    | {
+        code: number | null;
+        signal: NodeJS.Signals | null;
+      }
+    | undefined;
+  let serverStderr = "";
+  let tsxTempDir: string | undefined;
+
+  beforeAll(async () => {
+    const tsxBin = path.join(process.cwd(), "node_modules", ".bin", "tsx");
+    tsxTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tarot-mcp-tsx-"));
+    serverProcess = spawn(
+      tsxBin,
+      ["src/index.ts", "--transport", "http", "--port", String(SECURED_PORT)],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          TMPDIR: tsxTempDir,
+          MCP_AUTH_TOKEN: AUTH_TOKEN,
+          RATE_LIMIT_MAX: "5",
+          RATE_LIMIT_WINDOW_MS: "60000",
+        },
+        stdio: "pipe",
+      },
+    );
+    serverProcess.stderr.on("data", (chunk) => {
+      serverStderr += chunk.toString();
+    });
+    serverProcess.once("exit", (code, signal) => {
+      serverExit = { code, signal };
+    });
+
+    await waitForHealth(SECURED_BASE_URL, () => {
+      if (!serverExit) {
+        return undefined;
+      }
+
+      return [
+        `Secured HTTP server process exited before becoming healthy.`,
+        `exitCode=${serverExit.code} signal=${serverExit.signal}`,
+        serverStderr.trim(),
+      ]
+        .filter(Boolean)
+        .join("\n");
+    });
+  }, 20000);
+
+  afterAll(async () => {
+    if (serverProcess && serverExit === undefined) {
+      serverProcess.kill("SIGTERM");
+      await new Promise((resolve) => serverProcess.once("exit", resolve));
+    }
+
+    if (tsxTempDir) {
+      await fs.rm(tsxTempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("requires a bearer token on REST and MCP endpoints but not /health", async () => {
+    const health = await fetch(`${SECURED_BASE_URL}/health`);
+    expect(health.status).toBe(200);
+
+    const draw = await fetch(`${SECURED_BASE_URL}/draw`);
+    expect(draw.status).not.toBe(401);
+
+    const unauthorized = await fetch(`${SECURED_BASE_URL}/api/info`);
+    expect(unauthorized.status).toBe(401);
+    expect((await fetch(`${SECURED_BASE_URL}/api/history`)).status).toBe(401);
+    expect(
+      (
+        await fetch(`${SECURED_BASE_URL}/api/history`, {
+          headers: { authorization: `Bearer ${AUTH_TOKEN}` },
+        })
+      ).status,
+    ).toBe(200);
+
+    const authorized = await fetch(`${SECURED_BASE_URL}/api/info`, {
+      headers: { authorization: `Bearer ${AUTH_TOKEN}` },
+    });
+    expect(authorized.status).toBe(200);
+  });
+
+  it("rate limits bursts on API endpoints", async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const response = await fetch(`${SECURED_BASE_URL}/api/spreads`, {
+        headers: { authorization: `Bearer ${AUTH_TOKEN}` },
+      });
+      statuses.push(response.status);
+    }
+
+    expect(statuses).toContain(429);
+  });
+});

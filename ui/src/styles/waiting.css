@@ -1,0 +1,12 @@
+/* --------------------------------------------------------------- waiting */
+
+.waiting-shell {
+  align-content: center;
+  color: var(--muted);
+  text-align: center;
+}
+
+.waiting-symbol {
+  color: var(--gold);
+  font-size: 42px;
+}
