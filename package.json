@@ -10,6 +10,7 @@
     "build:server": "tsc",
     "build:ui": "npm run typecheck:ui && npm run build:ui:web && npm run build:ui:mcp",
     "build:ui:web": "vite build --config ui/vite.web.config.ts",
+    "build:pages": "npm run clean && npm run typecheck:ui && npm run build:ui:web && node scripts/build-pages.mjs",
     "build:ui:mcp": "vite build --config ui/vite.mcp.config.ts",
     "dev": "tsx src/index.ts",
     "dev:http": "tsx src/index.ts --transport http --port 3000",

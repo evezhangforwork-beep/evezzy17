@@ -1,4 +1,4 @@
-import { DrawnCard, Language } from "../../shared/types.js";
+import type { DrawnCard, Language } from "../../shared/types.js";
 import { localizedCardName, localizedMeanings, pick } from "../../shared/i18n.js";
 import { orientationLabel } from "../reading-formatter.js";
 import { generateGenericSpreadAnalysis, selectSpreadAnalysis } from "./analyzers.js";

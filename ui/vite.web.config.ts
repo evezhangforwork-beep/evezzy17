@@ -7,7 +7,7 @@ const tarotRoot = fileURLToPath(new URL("../src/tarot", import.meta.url));
 
 export default defineConfig({
   root,
-  base: "/draw/",
+  base: process.env.VITE_PUBLIC_BASE ?? "/draw/",
   publicDir: false,
   resolve: {
     alias: {

@@ -1,4 +1,8 @@
-import { CardMeanings, DrawnCard, Language } from "../../shared/types.js";
+import type {
+  CardMeanings,
+  DrawnCard,
+  Language,
+} from "../../shared/types.js";
 import { localizedElement, pick } from "../../shared/i18n.js";
 
 /**

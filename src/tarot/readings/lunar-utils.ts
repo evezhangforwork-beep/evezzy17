@@ -2,7 +2,7 @@
  * Moon phase calculations and lunar-related utilities for tarot readings
  */
 
-import { Language } from "../shared/types.js";
+import type { Language } from "../shared/types.js";
 import { pick } from "../shared/i18n.js";
 import { TAROT_SPREADS, isValidSpreadType } from "./spreads.js";
 import { localizedSpread } from "./spread-localizations.js";
@@ -250,4 +250,3 @@ export function getMoonPhaseRecommendations(
 
   return recommendations;
 }
-

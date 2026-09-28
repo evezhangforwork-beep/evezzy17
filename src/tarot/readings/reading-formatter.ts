@@ -1,11 +1,15 @@
-import { Language, TarotReading, TarotSpread } from "../shared/types.js";
+import type {
+  DrawnCard,
+  Language,
+  TarotReading,
+  TarotSpread,
+} from "../shared/types.js";
 import {
   localizedCardName,
   localizedKeywords,
   localizedOrientation,
   pick,
 } from "../shared/i18n.js";
-import { DrawnCard } from "../shared/types.js";
 
 /**
  * Format a reading for display.

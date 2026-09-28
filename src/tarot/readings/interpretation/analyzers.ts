@@ -1,4 +1,8 @@
-import { DrawnCard, Language, SpreadType } from "../../shared/types.js";
+import type {
+  DrawnCard,
+  Language,
+  SpreadType,
+} from "../../shared/types.js";
 import { localizedCardName, pick } from "../../shared/i18n.js";
 import { orientationLabel } from "../reading-formatter.js";
 import { isValidSpreadType } from "../spreads.js";

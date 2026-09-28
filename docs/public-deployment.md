@@ -1,22 +1,22 @@
 # Free public deployment
 
-This repository includes a Render Blueprint in `render.yaml` for a free Docker web service.
+The public edition deploys through GitHub Pages and requires no paid service, payment method, database, or server.
 
 ## Deploy
 
-1. Push this repository to a GitHub repository you control.
-2. In Render, create a new Blueprint and select that repository.
-3. Confirm the `midnight-tarot-draw` free web service.
-4. Open the generated Render URL. `/` redirects to `/draw/`.
-
-The Singapore region is selected for lower latency in Asia. Render's free web services can sleep while idle, so the first visit after a quiet period may take longer to load.
+1. Push the repository to the `main` branch on GitHub.
+2. Enable GitHub Pages with GitHub Actions as the publishing source.
+3. The `Deploy free web edition` workflow builds and publishes the site.
+4. Open `https://<account>.github.io/<repository>/draw/`.
 
 ## Public-mode behavior
 
-- Card draws and the copy-reading action work on the public page.
-- Each visitor's reading history is stored in that visitor's browser on public domains. It is not uploaded, shared with other visitors, or synchronized across devices.
+- Card draws happen entirely in the visitor's browser with Web Crypto randomness. The question does not participate in card selection.
+- The copy-reading action works without an account or external API.
+- Each visitor's reading history is stored in that visitor's browser. It is not uploaded, shared with other visitors, or synchronized across devices.
 - The existing server-side reading history remains limited to loopback hosts (`localhost` and `127.0.0.1`).
-- The free deployment does not include persistent storage. Service restarts can discard in-progress server sessions.
+
+The optional `render.yaml` remains available for a full hosted MCP/HTTP server, but Render can require payment information even for a free-plan service.
 
 ## License notices
 

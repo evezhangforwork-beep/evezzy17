@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { VISUAL_CARD_ASSET_BASE } from "@tarot/shared/artwork.js";
 import type {
   ReadingHistoryClient,
   ReadingHistoryEntry,
   ReadingHistorySummary,
 } from "@tarot/shared/reading-history.js";
 import { CopyReading } from "./CopyReading.js";
+import { cardImageUri } from "./card-assets.js";
 import { ReadingInterpretation } from "./ReadingInterpretation.js";
 import { ReadingNotes } from "./ReadingNotes.js";
 import type { Language } from "./types.js";
@@ -224,7 +224,7 @@ export function ReadingHistory({
                           {index + 1}. {card.position}
                         </span>
                         <img
-                          src={`${VISUAL_CARD_ASSET_BASE}/${encodeURIComponent(card.id)}.webp`}
+                          src={cardImageUri(card.id)}
                           className={
                             card.orientation === "reversed"
                               ? "is-reversed"
@@ -385,7 +385,7 @@ export function ReadingHistory({
                         >
                           <span className="journal-list-card-art">
                             <img
-                              src={`${VISUAL_CARD_ASSET_BASE}/${encodeURIComponent(card.id)}.webp`}
+                              src={cardImageUri(card.id)}
                               className={
                                 card.orientation === "reversed"
                                   ? "is-reversed"
