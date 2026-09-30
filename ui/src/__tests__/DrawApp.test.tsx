@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { vi } from "vitest";
+import { cardImageUri } from "../card-assets.js";
 import { DrawApp } from "../DrawApp.js";
 import type {
   BeginReadingInput,
@@ -446,6 +447,19 @@ describe("DrawApp widget state recovery", () => {
 });
 
 describe("DrawApp", () => {
+  it("uses the configured card asset base for the setup preview", () => {
+    const { client } = createClient();
+    render(<DrawApp client={client} />);
+
+    const sources = Array.from(
+      document.querySelectorAll<HTMLImageElement>(".deck-preview img"),
+      (image) => image.getAttribute("src"),
+    );
+    expect(sources).toEqual(
+      ["moon", "back", "star"].map((cardId) => cardImageUri(cardId)),
+    );
+  });
+
   it("retries preparing the same question after a network failure", async () => {
     const user = userEvent.setup();
     const { client, beginReading } = createClient();

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { VISUAL_CARD_ASSET_BASE } from "@tarot/shared/artwork.js";
+import { cardImageUri } from "./card-assets.js";
 import { t } from "./i18n.js";
 import { RitualProgress } from "./RitualProgress.js";
 import type { DrawClient, Language } from "./types.js";
@@ -30,7 +30,11 @@ export function SetupShell({
         {client.target === "mcp" ? (
           <span className="wordmark">Tarot</span>
         ) : (
-          <a className="wordmark" href="/draw/" aria-label="Tarot">
+          <a
+            className="wordmark"
+            href={import.meta.env.BASE_URL}
+            aria-label="Tarot"
+          >
             <span aria-hidden="true">✦</span> Tarot
           </a>
         )}
@@ -68,7 +72,7 @@ export function SetupShell({
                 const source =
                   client.target === "mcp"
                     ? client.getPreviewImage?.(cardId)
-                    : `${VISUAL_CARD_ASSET_BASE}/${cardId}.webp`;
+                    : cardImageUri(cardId);
                 return source ? (
                   <img
                     key={cardId}

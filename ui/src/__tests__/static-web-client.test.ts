@@ -1,4 +1,5 @@
 import { createStaticWebClient } from "../static-web-client.js";
+import { cardImageUri } from "../card-assets.js";
 
 describe("static web client", () => {
   beforeEach(() => window.localStorage.clear());
@@ -21,6 +22,12 @@ describe("static web client", () => {
 
     expect(reading.cards).toHaveLength(3);
     expect(new Set(reading.cards.map((card) => card.id)).size).toBe(3);
+    for (const card of reading.cards) {
+      expect(card.imageUri).toBe(cardImageUri(card.id));
+      await expect(client.resolveImage?.(card)).resolves.toBe(
+        cardImageUri(card.id),
+      );
+    }
     expect(reading.interpretation).toContain("下一步应该关注什么？");
     await expect(client.history?.list()).resolves.toMatchObject({
       enabled: true,
