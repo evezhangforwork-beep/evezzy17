@@ -320,7 +320,7 @@ describe("HTTP MCP server", () => {
       confirmedJson.reading.interpretation,
     );
     expect(confirmedJson.reading.cards[0].imageUri).toMatch(
-      /^\/assets\/cards\/midnight-art-nouveau-v1\/.+\.webp$/,
+      /^\/assets\/cards\/rws-midnight-v1\/.+\.webp$/,
     );
 
     const retry = await fetch(confirmUrl, {

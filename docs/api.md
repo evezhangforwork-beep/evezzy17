@@ -54,8 +54,8 @@ When running in HTTP mode, the following endpoints are available:
 ### Visual UI and artwork
 
 - `GET /draw` - Shared visual reading app (public static page)
-- `GET /assets/cards/midnight-art-nouveau-v1/:cardId.webp` - 512×768 Web artwork
-- `GET /assets/cards/midnight-art-nouveau-v1/mcp/:cardId.webp` - 192×288 MCP artwork
+- `GET /assets/cards/rws-midnight-v1/:cardId.webp` - 512×768 Web artwork
+- `GET /assets/cards/rws-midnight-v1/mcp/:cardId.webp` - 192×288 MCP artwork
 
 The static UI and versioned artwork are public/cacheable. `/api/*`, `/mcp`, `/sse`, and `/messages` continue to require Bearer authentication whenever `MCP_AUTH_TOKEN` is set.
 

@@ -1,42 +1,34 @@
-# Midnight Art Nouveau Tarot Artwork
+# Rider–Waite–Smith Tarot · Midnight Edition
 
-Copyright (c) 2026 Morax
+## Traditional card faces
 
-The original visual assets in the following locations are distributed under
-the same MIT License as this repository:
+The 78 card faces in `assets/cards/` use cleaned scans of the 1910
+Rider–Waite–Smith tarot deck illustrated by Pamela Colman Smith. They were
+retrieved from the Wikimedia Commons category
+[`Rider-Waite-Smith tarot deck (Geldard)`](https://commons.wikimedia.org/wiki/Category:Rider-Waite-Smith_tarot_deck_(Geldard)).
+The source page for every card identifies the work as **Public domain**.
 
-- `assets/cards/`
-- `assets/artwork/`
+The exact source page, download URL, rights metadata, dimensions, and SHA-256
+hash for each card are recorded in `assets/artwork/rws-sources.json`.
 
-To the extent that copyright or related rights subsist in these assets, the
-copyright holder grants the permissions stated in the repository's root
-`LICENSE` file. The copyright notice and permission notice must be retained in
-copies or substantial portions of the asset collection.
+The import process preserves each complete traditional card image without
+redrawing, replacing, or cropping its symbolism. It applies only a restrained
+colour grade, resizing, compression, and the project's midnight navy and
+antique-gold outer frame.
 
-## Provenance
+## Project artwork
 
-The artwork was created specifically for this project with OpenAI's built-in
-`image_gen` tool from project-authored prompts, then normalized and framed by
-the deterministic scripts in `scripts/art/`. No card image, scan, colorization,
-font artwork, or other visual asset was downloaded from the web or copied from
-a third-party tarot deck.
+The outer frame, card back, interface artwork, and legacy generated artwork in
+`assets/artwork/` are distributed under the repository's MIT License. Copyright
+(c) 2026 Morax. The root `LICENSE` file applies to those project-authored assets
+and to the software, but does not create new restrictions on the public-domain
+Rider–Waite–Smith card faces.
 
-The deck uses general tarot names and traditional symbolic vocabulary as
-descriptive subject matter. Its compositions, palette, frame, card back, and
-rendered scenes are original to this asset set.
-
-Exact prompts, hashes, and output paths are recorded in
-`assets/artwork/prompt-provenance.json`. The generated center art contains no
-intentional text, title, number, logo, signature, or watermark. Suit pips and
-the common frame are deterministic project artwork produced during
-post-processing. Minor-arcana rank labels (`A`, `II`–`X`, `P`, `N`, `Q`,
-`K`) are also rendered deterministically and are not generated image text.
-The published card back is built by averaging every raw pixel with its
-180-degree counterpart, then using palette quantization and lossless WebP so
-both delivered sizes remain exactly symmetric after decoding.
+The published card back is built to remain exactly symmetric after decoding at
+both delivered sizes.
 
 ## No warranty
 
-The artwork is provided "AS IS", without warranty of any kind, express or
-implied, including but not limited to merchantability, fitness for a
-particular purpose, and noninfringement.
+The assets are provided "AS IS", without warranty of any kind, express or
+implied, including but not limited to merchantability, fitness for a particular
+purpose, and noninfringement.

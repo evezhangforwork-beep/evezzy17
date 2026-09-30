@@ -1,9 +1,9 @@
 # Tarot MCP
 
 A bilingual tarot reading service and visual card table, built with TypeScript,
-React and Vite. It includes a complete 78-card Rider–Waite–Smith deck, original
-Midnight Art Nouveau artwork, 25 built-in spreads, and daily, moon-phase and
-custom readings.
+React and Vite. It includes a complete 78-card traditional Rider–Waite–Smith
+deck in the site's midnight navy and antique-gold presentation, 25 built-in
+spreads, and daily, moon-phase and custom readings.
 
 Write a question, start each shuffle yourself, cut the current deck, and choose
 face-down cards in order. Confirmation keeps the table visible and retries the

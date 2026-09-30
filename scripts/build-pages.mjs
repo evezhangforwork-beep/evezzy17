@@ -27,7 +27,7 @@ const cardOutput = path.join(
   output,
   "assets",
   "cards",
-  "midnight-art-nouveau-v1",
+  "rws-midnight-v1",
 );
 await mkdir(cardOutput, { recursive: true });
 for (const name of await readdir(cardSource)) {

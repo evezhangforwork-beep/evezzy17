@@ -209,7 +209,7 @@ immediately instead of leaving an unreachable waiter.
 
 ## Visual System
 
-- Complete 78-card `midnight-art-nouveau-v1` deck plus a rotationally symmetric
+- Complete 78-card `rws-midnight-v1` traditional Rider–Waite–Smith deck plus a rotationally symmetric
   back, generated for this project without third-party card imagery.
 - Midnight indigo, warm ivory, antique-gold line work, flat Art Nouveau
   composition, no generated text, logos, signatures, or watermarks.

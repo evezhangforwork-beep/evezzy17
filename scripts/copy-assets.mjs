@@ -14,13 +14,13 @@ const assets = [
     to: join(rootDir, "dist", "assets", "ASSET_LICENSE.md"),
   },
   {
-    from: join(rootDir, "assets", "artwork", "prompt-provenance.json"),
+    from: join(rootDir, "assets", "artwork", "rws-sources.json"),
     to: join(
       rootDir,
       "dist",
       "assets",
       "artwork",
-      "prompt-provenance.json",
+      "rws-sources.json",
     ),
   },
 ];

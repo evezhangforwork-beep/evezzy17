@@ -4,8 +4,8 @@ const messages = {
   en: {
     noWebInterpretation:
       "Select a revealed card to explore its meaning and position.",
-    deckEdition: "The Midnight Deck",
-    deckPreview: "Original deck artwork · 78 illustrated cards",
+    deckEdition: "Rider–Waite–Smith · Midnight Edition",
+    deckPreview: "Traditional RWS symbolism · complete 78-card deck",
     prepareReading: "Begin with a question",
     spreadCount: "{count} spreads",
     skipToForm: "Skip to reading setup",
@@ -122,8 +122,8 @@ const messages = {
   },
   zh: {
     noWebInterpretation: "点击已翻开的牌，查看它的牌义与牌位。",
-    deckEdition: "午夜牌组",
-    deckPreview: "原创牌面插画 · 完整 78 张牌",
+    deckEdition: "韦特经典 · 午夜版",
+    deckPreview: "传统韦特象征 · 完整 78 张牌",
     prepareReading: "从一个问题开始",
     spreadCount: "{count} 种牌阵",
     skipToForm: "跳至抽牌设置",

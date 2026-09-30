@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "deckId": "midnight-art-nouveau-v1",
-  "reviewedDate": "2026-08-05",
+  "deckId": "rws-midnight-v1",
+  "reviewedDate": "2026-09-30",
   "reviewer": "Codex visual QA",
   "cardsReviewed": 78,
   "contactSheets": [
@@ -13,44 +13,46 @@
     "assets/cards/qa/card-back-symmetry.png",
     "assets/cards/qa/representative-samples.png"
   ],
-  "noReadableText": true,
+  "traditionalRwsSymbolismVerified": true,
+  "cardTitlesAndRanksVerified": true,
+  "sourceMappingVerified": true,
   "noLogosOrWatermarks": true,
-  "pipCountsVerified": true,
   "styleConsistencyVerified": true,
   "anatomyAndCroppingVerified": true,
   "notes": [
-    "All 78 center-art sources were reviewed through overview and three enlarged detail sheets.",
-    "No readable generated text, signature, logo, watermark, placeholder, or copied card scan is visible.",
-    "Minor-arcana rank labels and suit pips are deterministic SVG overlays; A-10 counts and court-card single emblems match the manifest.",
-    "The complete deck retains the approved midnight-indigo, antique-gold, moonlit Art Nouveau language without a visual outlier.",
-    "Figures, hands, faces, focal crops, and card-edge safe areas are acceptable at the delivered Web and MCP sizes.",
+    "All 78 traditional Rider-Waite-Smith card faces were reviewed through overview and three enlarged detail sheets.",
+    "Every card maps to the expected canonical title and preserves the original 1910 symbols, scene, number, suit, and title.",
+    "No source card is cropped, redrawn, replaced, duplicated, or paired with a different card name.",
+    "The complete deck uses one restrained colour treatment and the same midnight navy and antique-gold outer frame.",
+    "Figures, symbols, titles, focal details, and card-edge safe areas are readable at the delivered Web and MCP sizes.",
+    "No added logo, signature, watermark, or unrelated mark is visible.",
     "Web and MCP card backs were reviewed beside 180-degree rotations and verified as decoded-pixel exact by the automated validator."
   ],
   "contactSheetArtifacts": [
     {
       "path": "assets/cards/qa/contact-sheet-web.png",
-      "bytes": 3233672,
-      "sha256": "7e1155107660e42b2b1f7e2def409f18e40baf2b7a594e3974f206d686270f8b"
+      "bytes": 2896756,
+      "sha256": "7c3e8de7a020da3fcc0b747f3ccca6be89a6156b6fe62ab5f3e5d53b76967cfd"
     },
     {
       "path": "assets/cards/qa/contact-sheet-mcp.png",
-      "bytes": 1386943,
-      "sha256": "439c5432595903e4c73da59642e23f93439539b3c397b94da942ef81298057c8"
+      "bytes": 1377580,
+      "sha256": "3e3d3bd12e8e9e9bc692d17b718b5ace7584bb72a3db091bdd4f7ae211c5a883"
     },
     {
       "path": "assets/cards/qa/contact-sheet-detail-1.png",
-      "bytes": 4273573,
-      "sha256": "eb57670f2611af052d1b0f09692522a7910c717ba0416ceddcf88920fa8496b1"
+      "bytes": 3700746,
+      "sha256": "50f25ddc7580975fd82559137fb4c3fcedcce7b57d587b4aa8fc82b2ea412c38"
     },
     {
       "path": "assets/cards/qa/contact-sheet-detail-2.png",
-      "bytes": 4125444,
-      "sha256": "33bf96ee2480ab89c83d9e55a3c0802dfc13789a87d9aba596c319f29e4fb6e8"
+      "bytes": 3530405,
+      "sha256": "e204430245b50af7b99adece449c7ffc14b4a2153ba6aee115f9acd53b5a56cb"
     },
     {
       "path": "assets/cards/qa/contact-sheet-detail-3.png",
-      "bytes": 4105174,
-      "sha256": "84c72804adce741138b4e275f3026b428811865775a12a6c0c3bd0ba19f00fdb"
+      "bytes": 3504750,
+      "sha256": "494c75700f7547f5631ea909aabb42591a719b56f40ed7ae66cd7f74755d47ed"
     },
     {
       "path": "assets/cards/qa/card-back-symmetry.png",
@@ -59,8 +61,8 @@
     },
     {
       "path": "assets/cards/qa/representative-samples.png",
-      "bytes": 1687814,
-      "sha256": "0a5a1bf3e625a6f6f0c701095c476580dd159803ea139dbeaf7f0e833e1dd642"
+      "bytes": 1463869,
+      "sha256": "9cdc1f7b8df24c461ce0aeb07e8edf7bcef2dc1dc79caf4c0e434d733b3f5321"
     }
   ],
   "cardBackExactDecodedSymmetryVerified": true

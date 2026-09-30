@@ -1,52 +1,40 @@
 # Tarot artwork pipeline
 
-This pipeline owns the original `midnight-art-nouveau-v1` deck. It does not
-download or hotlink artwork. Every center-art PNG and the card back were
-created through one independent OpenAI built-in `image_gen` call.
-
-## Inputs
-
-- `assets/artwork/style/dark-art-nouveau-style-board.png`
-- `assets/artwork/source/{cardId}.png` for all 78 canonical card ids
-- `assets/artwork/source/back.png`
-- `src/tarot/cards/card-data.json` as the canonical id/rank registry
+The active `rws-midnight-v1` deck uses the complete traditional 1910
+Rider–Waite–Smith artwork by Pamela Colman Smith. Source files come from the
+public-domain Wikimedia Commons category recorded in
+`assets/artwork/rws-sources.json`.
 
 ## Rebuild order
 
 ```bash
-node scripts/art/generate-prompt-plan.mjs
-node scripts/art/generate-provenance.mjs
-node scripts/art/process-deck.mjs
+npm run import:rws
 node scripts/art/build-contact-sheets.mjs
-node scripts/art/build-ocr-audit.mjs --mark-reviewed
 node scripts/art/finalize-manual-review.mjs
-node scripts/art/validate-deck.mjs
+npm run verify:assets
 ```
 
-`sharp` performs every production resize, SVG composite, palette operation,
-and WebP encode. Tesseract is optional and is used only to produce a heuristic
-review report; decorative linework creates false positives, so OCR tokens never
-replace contact-sheet review.
+`import:rws` reads the canonical 78-card order from
+`src/tarot/cards/card-data.json`, downloads and verifies all Wikimedia source
+records, then creates:
 
-## Deterministic layers
+- Web cards at `assets/cards/{cardId}.webp` (512×768, at most 180 KB);
+- MCP cards at `assets/cards/mcp/{cardId}.webp` (192×288, adaptive quality);
+- versioned URLs under `/assets/cards/rws-midnight-v1/`;
+- source and rights metadata in `assets/artwork/rws-sources.json`;
+- the current deck manifest in `assets/cards/manifest.json`.
 
-Generated sources intentionally contain no title, rank, border, or suit pip.
-`process-deck.mjs` adds:
+The complete source card is fitted without cropping. Processing only mutes the
+original colours slightly and adds the project's navy and antique-gold outer
+frame, so traditional symbols, titles, numbers, and ordering remain intact.
 
-- a common SVG frame;
-- minor-arcana ranks `A`, `II`–`X`, `P`, `N`, `Q`, `K`;
-- exactly 1–10 suit pips for numbered cards and one suit emblem for courts.
+## Validation
 
-The card back is averaged with its 180-degree raw-pixel counterpart, resized,
-quantized to a 128-colour palette, and encoded as lossless WebP. Both delivered
-sizes remain pixel-exact when decoded and rotated.
+`validate-deck.mjs` checks the 78 canonical mappings, public-domain source
+metadata, hashes, dimensions, unique outputs, QA sheet hashes, size budgets,
+and exact card-back symmetry. The contact sheets provide a visual check of all
+cards at overview and detail sizes.
 
-## Outputs and gates
-
-- Web: `assets/cards/{cardId}.webp`, 512×768, at most 180,000 bytes.
-- MCP: `assets/cards/mcp/{cardId}.webp`, 192×288, at most 24,000 bytes.
-- Versioned URLs are recorded in `assets/cards/manifest.json` under
-  `/assets/cards/midnight-art-nouveau-v1/`.
-- `validate-deck.mjs` checks all 78 ids, hashes, dimensions, uniqueness,
-  prompt provenance, pip/rank metadata, exact card-back symmetry, QA hashes,
-  and the 79-image inline MCP App artwork budget.
+The former generated Midnight Art Nouveau sources and scripts remain in
+`assets/artwork/` and `scripts/art/` as a legacy archive. They are not used by
+the active deck build.

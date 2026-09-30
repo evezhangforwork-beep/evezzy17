@@ -20,7 +20,7 @@ export function getVisualAppResourceDefinition() {
     uri: VISUAL_APP_RESOURCE_URI,
     name: "Visual tarot reading",
     description:
-      "Interactive dark Art Nouveau tarot deck for choosing and revealing cards",
+      "Interactive traditional Rider–Waite–Smith tarot deck in a dark midnight frame",
     mimeType: RESOURCE_MIME_TYPE,
     _meta: {
       ui: {

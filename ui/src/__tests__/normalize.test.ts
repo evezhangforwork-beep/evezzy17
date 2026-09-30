@@ -103,7 +103,7 @@ describe("visual draw payload normalization", () => {
             name: "The Fool",
             displayName: "愚者",
             orientation: "reversed",
-            imageUri: "/assets/cards/midnight-art-nouveau-v1/fool.webp",
+            imageUri: "/assets/cards/rws-midnight-v1/fool.webp",
             imageResourceUri: "tarot://legacy/fool",
           },
         ],
@@ -119,7 +119,7 @@ describe("visual draw payload normalization", () => {
       id: "fool",
       displayName: "愚者",
       orientation: "reversed",
-      imageUri: "/assets/cards/midnight-art-nouveau-v1/fool.webp",
+      imageUri: "/assets/cards/rws-midnight-v1/fool.webp",
       embeddedImage: { mimeType: "image/webp", data: "ZmFjZQ==" },
     });
     expect(reading.deckBackImageUri).toBe("data:image/webp;base64,YmFjaw==");

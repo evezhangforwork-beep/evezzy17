@@ -67,7 +67,7 @@ describe("Web visual-reading client", () => {
               requiredCount: 1,
               slots,
               deck: {
-                backImageUri: "/assets/cards/midnight-art-nouveau-v1/back.webp",
+                backImageUri: "/assets/cards/rws-midnight-v1/back.webp",
                 slots,
               },
             },
@@ -89,7 +89,7 @@ describe("Web visual-reading client", () => {
                 name: "The Fool",
                 displayName: "The Fool",
                 orientation: "upright",
-                imageUri: "/assets/cards/midnight-art-nouveau-v1/fool.webp",
+                imageUri: "/assets/cards/rws-midnight-v1/fool.webp",
               },
             ],
           },
@@ -122,7 +122,7 @@ describe("Web visual-reading client", () => {
         body: JSON.stringify({ selectedSlotIds: ["opaque-0"] }),
       }),
     );
-    expect(reading.cards[0].imageUri).toContain("midnight-art-nouveau-v1");
+    expect(reading.cards[0].imageUri).toContain("rws-midnight-v1");
 
     client.setSessionToken?.("");
     expect(window.sessionStorage.getItem(AUTH_TOKEN_SESSION_KEY)).toBeNull();
@@ -152,7 +152,7 @@ describe("Web visual-reading client", () => {
             requiredCount: 1,
             slots,
             deck: {
-              backImageUri: "/assets/cards/midnight-art-nouveau-v1/back.webp",
+              backImageUri: "/assets/cards/rws-midnight-v1/back.webp",
               slots,
             },
           },
@@ -173,7 +173,7 @@ describe("Web visual-reading client", () => {
                 name: "The Fool",
                 displayName: "The Fool",
                 orientation: "upright",
-                imageUri: "/assets/cards/midnight-art-nouveau-v1/fool.webp",
+                imageUri: "/assets/cards/rws-midnight-v1/fool.webp",
               },
             ],
           },
@@ -252,7 +252,7 @@ describe("Web visual-reading client", () => {
           requiredCount: 1,
           slots,
           deck: {
-            backImageUri: "/assets/cards/midnight-art-nouveau-v1/back.webp",
+            backImageUri: "/assets/cards/rws-midnight-v1/back.webp",
             slots,
           },
         },
@@ -287,7 +287,7 @@ describe("Web visual-reading client", () => {
     expect(onConfirmed.mock.calls[0][0]).toMatchObject({
       readingId: "reading_restored",
       drawId: "draw_restored",
-      deckBackImageUri: "/assets/cards/midnight-art-nouveau-v1/back.webp",
+      deckBackImageUri: "/assets/cards/rws-midnight-v1/back.webp",
       cards: [{ id: "world", orientation: "reversed" }],
     });
   });

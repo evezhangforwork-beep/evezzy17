@@ -31,7 +31,7 @@ jobs:
         env:
           VITE_STATIC_DRAW: "true"
           VITE_PUBLIC_BASE: /${{ github.event.repository.name }}/draw/
-          VITE_CARD_ASSET_BASE: /${{ github.event.repository.name }}/assets/cards/midnight-art-nouveau-v1
+          VITE_CARD_ASSET_BASE: /${{ github.event.repository.name }}/assets/cards/rws-midnight-v1
         run: npm run build:pages
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

@@ -67,7 +67,7 @@ const manifest = JSON.parse(
   ).toString("utf8"),
 );
 if (
-  manifest.deckId !== "midnight-art-nouveau-v1" ||
+  manifest.deckId !== "rws-midnight-v1" ||
   !Array.isArray(manifest.cards) ||
   manifest.cards.length !== 78
 ) {
@@ -81,15 +81,15 @@ await Promise.all([
     "Artwork license",
   ),
   requireMatchingFile(
-    join(rootDir, "assets", "artwork", "prompt-provenance.json"),
+    join(rootDir, "assets", "artwork", "rws-sources.json"),
     join(
       rootDir,
       "dist",
       "assets",
       "artwork",
-      "prompt-provenance.json",
+      "rws-sources.json",
     ),
-    "Prompt provenance",
+    "RWS source registry",
   ),
 ]);
 
@@ -117,7 +117,7 @@ for (const card of manifest.cards) {
       `${card.id} ${variant} artwork`,
     );
     const metadata = await sharp(bytes).metadata();
-    const expected = variant === "web" ? [512, 768, 180_000] : [192, 288, 24_000];
+    const expected = variant === "web" ? [512, 768, 180_000] : [192, 288, 7_350];
     if (metadata.width !== expected[0] || metadata.height !== expected[1]) {
       throw new Error(`${card.id} ${variant} artwork has wrong dimensions.`);
     }
