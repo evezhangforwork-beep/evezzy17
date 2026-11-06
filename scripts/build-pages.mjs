@@ -34,6 +34,12 @@ for (const name of await readdir(cardSource)) {
   if (name.endsWith(".webp"))
     await copyFile(path.join(cardSource, name), path.join(cardOutput, name));
 }
+// Copy the standalone Four Frames camera into its own public Pages path.
+await mkdir(path.join(output, "fourframes"), { recursive: true });
+await copyFile(
+  path.join(root, "sites", "fourframes", "index.html"),
+  path.join(output, "fourframes", "index.html"),
+);
 await writeFile(path.join(output, "index.html"), redirect);
 await writeFile(path.join(output, "404.html"), redirect);
 await writeFile(path.join(output, ".nojekyll"), "");
