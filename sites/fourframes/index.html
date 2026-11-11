@@ -438,7 +438,7 @@ async function shoot(){
  }catch(err){if(captureGeneration===token)setMsg('拍摄失败：'+err.message,true)}
  finally{if(captureGeneration===token){app.busy=false;$('countdown').classList.remove('show');countStatus()}}
 }
-async function save(){if(app.shots.length!==t().count){setMsg('请先完成这个模板的全部拍摄格数。',true);return}const btn=$('saveBtn');btn.disabled=true;btn.textContent='正在生成照片…';const {w,h}=currentDimensions();try{const out=document.createElement('canvas');out.width=w;out.height=h;drawPoster(out,t());const blob=await new Promise((res,rej)=>out.toBlob(b=>b?res(b):rej(Error('导出失败')),'image/png'));const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fourframes-${t().id}-${new Date().toISOString().slice(0,10)}.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);setMsg('已导出 '+w+' × '+h+' PNG，使用与预览相同的滤镜和排版。')}catch(err){setMsg(`导出失败：${err.message}`,true)}finally{countStatus()}}
+async function save(){if(app.shots.length!==t().count){setMsg('请先完成这个模板的全部拍摄格数。',true);return}const btn=$('saveBtn');btn.disabled=true;btn.textContent='正在生成照片…';const {w,h}=currentDimensions();try{const out=document.createElement('canvas');out.width=w;out.height=h;drawPoster(out,t());const blob=await new Promise((res,rej)=>out.toBlob(b=>b?res(b):rej(Error('导出失败')),'image/png'));const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fourframes-${t().id}-${new Date().toISOString().slice(0,10)}.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);setMsg('已导出 '+w+' × '+h+' PNG，使用与预览相同的滤镜和排版。')}catch(err){setMsg(`导出失败：${err.message}`,true)}finally{btn.textContent='↓ 下载当前相纸 · '+w+'×'+h+' PNG';countStatus()}}
 $('startBtn').addEventListener('click',()=>startCamera(app.deviceId));
 $('shootBtn').addEventListener('click',shoot);
 $('resetBtn').addEventListener('click',()=>{cancelCapture();app.shots=[];countStatus();setMsg('相纸已重置，可以重新拍摄。')});
@@ -557,7 +557,7 @@ function renderMyDesigns(){
     if(app.template===rec.id||app.template.startsWith(rec.id+'--')){app.template='series-strip4';app.shots=[];const d=t();app.filter=d.filter;app.grain=d.grain;app.leak=d.leak;app.intensity=d.intensity??85;refreshActive()}
     renderMyDesigns();setMsg('已从「我的设计」中删除该模板。');
   });
-  actions.append(edit,del);item.append(open,actions);root.appendChild(item);
+  actions.append(edit,del);item.insertBefore(open,item.firstChild);item.append(actions);root.appendChild(item);
   const savedTemplate=templates.find(x=>x.id===(rec.family?rec.id+'--grid4':rec.id));if(savedTemplate){if(savedTemplate.outputW){thumb.width=160;thumb.height=Math.round(160*savedTemplate.outputH/savedTemplate.outputW)}drawPoster(thumb,savedTemplate,{thumbnail:true})}
  }
 }
