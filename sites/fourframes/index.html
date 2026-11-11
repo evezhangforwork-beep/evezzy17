@@ -179,7 +179,15 @@ body.studio-on .layout{display:none}body:not(.studio-on) .studio-root{display:no
 'use strict';
 const $ = id => document.getElementById(id);
 const BASE_W=900, BASE_H=1200;
+const FORMATS=[
+ {key:'strip4',name:'四连竖排',w:2000,h:6000,count:4,pw:1580,ph:1185,xy:[[210,215],[210,1680],[210,3145],[210,4610]]},
+ {key:'grid4',name:'2×2 四格',w:2970,h:4060,count:4,pw:1185,ph:1580,xy:[[200,300],[1585,300],[200,2180],[1585,2180]]},
+ {key:'strip3',name:'三连竖排',w:2000,h:4635,count:3,pw:1580,ph:1185,xy:[[210,210],[210,1725],[210,3240]]},
+ {key:'strip2',name:'双连竖排',w:2000,h:3630,count:2,pw:1580,ph:1185,xy:[[210,205],[210,1575]]}
+];
+const FORMAT_BY_KEY=Object.fromEntries(FORMATS.map(x=>[x.key,x]));
 const templates=[
+ ...FORMATS.map(fmt=>({id:'series-'+fmt.key,name:fmt.name,sub:fmt.w+' × '+fmt.h,filter:'sepia',intensity:80,grain:63,leak:24,type:'series',format:fmt.key,count:fmt.count,outputW:fmt.w,outputH:fmt.h})),
   {id:'portra',name:'PORTRA CONTACT',sub:'奶油黑白 · 4格',filter:'monoSoft',grain:55,leak:8,type:'contact',count:4},
   {id:'expired',name:'EXPIRED 400',sub:'老相纸 · 单幅',filter:'sepia',grain:83,leak:55,type:'expired',count:1},
   {id:'film01',name:'FILM 01',sub:'电影条幅 · 3格',filter:'cinema',grain:43,leak:27,type:'film01',count:3},
@@ -197,7 +205,7 @@ const filters=[
   {id:'amber',name:'AMBER FILM',sub:'夕阳 / 暖橘 / 暗角',saturation:.88,contrast:1.11,brightness:.98,sepia:.41,grayscale:0,hue:-8,tint:'#cf8b51',swatch:'linear-gradient(120deg,#321b13,#a3683f,#f6d08c)'},
   {id:'flash',name:'PARTY FLASH',sub:'闪光灯 / 复古',saturation:1.12,contrast:1.22,brightness:1.05,sepia:.15,grayscale:0,hue:2,tint:'#e7ae86',swatch:'linear-gradient(120deg,#1b2e34,#a786a2,#efd6a4)'},
 ];
-const app={template:'portra',filter:'monoSoft',intensity:85,grain:55,leak:8,mirror:true,shots:[],stream:null,deviceId:'',busy:false,lastFrame:0,timer:false};
+const app={template:'series-strip4',filter:'sepia',intensity:80,grain:63,leak:24,mirror:true,shots:[],stream:null,deviceId:'',busy:false,lastFrame:0,timer:false};
 let captureGeneration=0;
 const preview=$('preview'),video=$('camera');let noiseTile=null,streamGeneration=0;
 function t(){return templates.find(x=>x.id===app.template)}
@@ -254,7 +262,44 @@ function drawSprockets(ctx,x,y,endY){ctx.fillStyle='#020202';ctx.fillRect(x-18,y
 function drawFilmCode(ctx,label,x,y,dark=false,rot=-Math.PI/2){text(ctx,label,x,y,'700 18px monospace',dark?'#6b5b4c':'#b7a99a','left',rot)}
 function drawBackground(ctx,tt){switch(tt.type){case 'contact':ctx.fillStyle='#eae8de';break;case 'polaroid':ctx.fillStyle='#e4e4df';break;case 'birthday':ctx.fillStyle='#e7e3d7';break;case 'expired':ctx.fillStyle='#080706';break;case 'film01':ctx.fillStyle='#0e0e0d';break;case 'film02':ctx.fillStyle='#101010';break;default:ctx.fillStyle='#0a0808'}ctx.fillRect(0,0,BASE_W,BASE_H)}
 function drawPaperGrain(ctx){ctx.save();ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.16;for(let y=0;y<BASE_H;y+=190)for(let x=0;x<BASE_W;x+=190)ctx.drawImage(noiseTile,x,y,190,190);ctx.restore()}
-function drawTemplate(ctx,tt,opts={}){const slots=specs(tt.type);drawBackground(ctx,tt);
+function drawSeries(ctx,tt,opts={}){
+ const fmt=FORMAT_BY_KEY[tt.format]||FORMATS[0],w=fmt.w,h=fmt.h,scene=tt.scene||studio;
+ ctx.save();ctx.scale(BASE_W/w,BASE_H/h);
+ ctx.fillStyle=scene?.bg||'#211912';ctx.fillRect(0,0,w,h);
+ ctx.save();ctx.globalAlpha=.11;ctx.globalCompositeOperation='soft-light';ctx.fillStyle=ctx.createPattern(noiseTile,'repeat');ctx.fillRect(0,0,w,h);ctx.restore();
+ const slots=fmt.xy.map(([x,y])=>({x,y,w:fmt.pw,h:fmt.ph}));
+ slots.forEach((slot,i)=>{
+  ctx.fillStyle='#090807';ctx.fillRect(slot.x-17,slot.y-18,slot.w+34,slot.h+36);
+  drawSlot(ctx,slot,i,opts);
+  ctx.strokeStyle='#4a4037';ctx.lineWidth=4;ctx.strokeRect(slot.x-1,slot.y-1,slot.w+2,slot.h+2);
+  ctx.save();ctx.fillStyle='#c6a983';ctx.font='24px monospace';ctx.translate(slot.x-46,slot.y+slot.h-22);ctx.rotate(-Math.PI/2);ctx.fillText('◢  FOLIO 400  43 / 36 EXP',0,0);ctx.restore();
+  ctx.save();ctx.fillStyle='#c6a983';ctx.font='24px monospace';ctx.translate(slot.x+slot.w+46,slot.y+18);ctx.rotate(Math.PI/2);ctx.fillText('ORIGINAL NEGATIVE  '+String(i+1).padStart(2,'0'),0,0);ctx.restore();
+ });
+ ctx.save();ctx.fillStyle='#ba9b76';ctx.font='25px monospace';ctx.textAlign='left';ctx.fillText('FOUR / FRAMES     FILM LAB  •  400 ISO',68,102);ctx.textAlign='right';ctx.fillText(fmt.w+' × '+fmt.h+'  /  '+fmt.count+' FRAMES',w-68,102);ctx.restore();
+ // All variants reuse the same artwork; photo aperture geometry is format-specific.
+ if(scene?.items)for(const item of scene.items){
+  if(item.type==='photo'||(item.type==='sticker'&&item.kind==='filmrail'))continue;
+  const scale=Math.min(w/BASE_W,h/BASE_H)*.72,x=item.x/BASE_W*w,y=item.y>900?h-(BASE_H-item.y)*scale:item.y/BASE_H*h;
+  const mapped={...item,x,y,w:item.w*scale,h:item.h*scale,fontSize:(item.fontSize||34)*scale};
+  if(item.type==='text')drawTextItem(ctx,mapped);else if(item.type==='image')drawImageSticker(ctx,mapped);else stickerDraw(ctx,mapped);
+ }
+ ctx.restore();
+}
+function currentDimensions(tt=t()){return {w:tt.outputW||1800,h:tt.outputH||2400}}
+function updatePosterRatio(){
+ const tt=t(),{w,h}=currentDimensions(tt),key=tt.id+':'+w+'x'+h;
+ if(preview.dataset.renderKey===key)return;
+ preview.dataset.renderKey=key;preview.width=Math.max(240,Math.round(840*w/h));preview.height=840;
+ preview.parentElement.style.setProperty('--preview-ratio',w+' / '+h);
+ $('saveBtn').textContent='↓ 下载当前相纸 · '+w+'×'+h+' PNG';
+}
+function renderCapturedShots(){
+ const root=$('capturedShots');if(!root)return;
+ $('capturedCount').textContent=app.shots.length+' / '+t().count;root.replaceChildren();
+ if(!app.shots.length){const e=document.createElement('div');e.className='capture-gallery-empty';e.textContent='按下左侧快门，照片会依次排列在这里';root.appendChild(e);return}
+ app.shots.forEach((shot,i)=>{const card=document.createElement('div');card.className='capture-gallery-item';const c=document.createElement('canvas');c.width=160;c.height=120;drawSlot(c.getContext('2d'),{x:0,y:0,w:160,h:120},i);const n=document.createElement('small');n.textContent='FRAME '+String(i+1).padStart(2,'0');card.append(c,n);root.appendChild(card)});
+}
+function drawTemplate(ctx,tt,opts={}){if(tt.type==='series'){drawSeries(ctx,tt,opts);return}const slots=specs(tt.type);drawBackground(ctx,tt);
  if(tt.type==='expired'){ctx.fillStyle='#070605';ctx.fillRect(84,96,733,1010);ctx.strokeStyle='#89715f';ctx.lineWidth=7;ctx.strokeRect(108,123,685,951);ctx.fillStyle='#30261f';ctx.fillRect(124,142,652,925);drawSlot(ctx,slots[0],0,opts);drawFilmCode(ctx,'FOLIO • 400    FILM 01   ◢',89,950);drawFilmCode(ctx,'FRAME 43  /  COLOR NEGATIVE',817,250,false,Math.PI/2);text(ctx,'12',113,1125,'700 18px monospace','#b68a5e');text(ctx,'43',760,1125,'700 18px monospace','#b68a5e');}
  if(tt.type==='contact'){text(ctx,'FOLIO PORTRA 400',75,105,'bold 20px monospace','#3a5365');text(ctx,'43   •   12',818,105,'bold 17px monospace','#3a5365','right');slots.forEach((s,i)=>{ctx.fillStyle='#f4f2e8';ctx.fillRect(s.x-6,s.y-7,s.w+12,s.h+14);drawSlot(ctx,s,i,opts);text(ctx,'▶ 2',s.x+s.w*.4,s.y+s.h+24,'bold 15px monospace','#355773');text(ctx,'43  PORTRA 400',s.x,s.y-19,'700 15px monospace','#4a626e')});text(ctx,'400   //   MEMORY STRIP',75,1143,'700 18px monospace','#7f756b');text(ctx,'04 / 04',829,1143,'700 18px monospace','#7f756b','right');drawPaperGrain(ctx)}
  if(tt.type==='film01'){drawSprockets(ctx,59,72,1100);drawSprockets(ctx,839,72,1100);slots.forEach((s,i)=>{ctx.fillStyle='#050505';ctx.fillRect(s.x-12,s.y-10,s.w+24,s.h+20);drawSlot(ctx,s,i,opts);ctx.strokeStyle='#272421';ctx.lineWidth=2;ctx.strokeRect(s.x-.5,s.y-.5,s.w+1,s.h+1);drawFilmCode(ctx,`FOLIO   2010TX    ${12+i}`,107,s.y+s.h*.92);drawFilmCode(ctx,`43  •  ${22+i}   FOLIO 2010TX`,793,s.y+20,false,Math.PI/2)});text(ctx,'FILM 01',450,1149,'700 23px monospace','#9d907b','center')}
