@@ -162,7 +162,7 @@ body:not(.studio-on) .my-design-section{margin-top:12px}
 <nav class="topnav" aria-label="工作区"><button class="active" id="navCamera" type="button">◉ 01 / 拍照暗房</button><button id="navStudio" type="button">✦ 02 / 模板设计台</button><span class="top-note">MAKE MEMORIES LOOK LIKE FILM.  /  EST. 2026</span></nav>
     <div class="layout">
       <section class="preview-wrap" aria-label="实时相机取景器和相纸预览">
-        <div class="preview-top"><span class="eyebrow">LIVE CONTACT SHEET</span><span class="right">PREVIEW / 01—04<br/>35 MM AESTHETIC</span></div>
+        <div class="preview-top"><span class="eyebrow">LIVE CONTACT SHEET</span><span class="right" id="formatPreviewLabel">PREVIEW / 01—04<br/>35 MM AESTHETIC</span></div>
         <div class="canvas-stage"><div class="canvas-shell"><canvas id="preview" width="720" height="960" aria-label="实时模板效果"></canvas><div id="previewPrompt" class="preview-prompt">正在准备取景器…</div><div id="countdown" class="countdown" aria-live="assertive"></div></div></div>
         <div class="stage-footer"><span><strong id="currentTitle">PORTRA CONTACT</strong> <span id="formatLabel">/ 4 FRAMES</span></span><span>PREVIEW = EXPORT<br/>SAME RENDER PIPELINE</span></div>
         <section class="camera-deck" aria-label="拍照控制台">
@@ -334,6 +334,12 @@ function drawSeries(ctx,tt,opts={}){
  ctx.save();ctx.scale(BASE_W/w,BASE_H/h);
  ctx.fillStyle=scene?.bg||'#211912';ctx.fillRect(0,0,w,h);
  ctx.save();ctx.globalAlpha=.11;ctx.globalCompositeOperation='soft-light';ctx.fillStyle=ctx.createPattern(noiseTile,'repeat');ctx.fillRect(0,0,w,h);ctx.restore();
+ if(scene?.texture==='dots'){ctx.save();ctx.globalAlpha=.2;ctx.fillStyle='#d2a877';for(let x=15;x<w;x+=45)for(let y=20;y<h;y+=45){ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill()}ctx.restore()}
+ // Render shared film-rail layers beneath the photographic apertures.
+ if(scene?.items)for(const item of scene.items.filter(it=>it.type==='sticker'&&it.kind==='filmrail')){
+  const scale=Math.min(w/BASE_W,h/BASE_H)*.72;
+  stickerDraw(ctx,{...item,x:item.x/BASE_W*w,y:item.y/BASE_H*h,w:item.w*scale,h:item.h*scale});
+ }
  const slots=fmt.xy.map(([x,y])=>({x,y,w:fmt.pw,h:fmt.ph}));
  slots.forEach((slot,i)=>{
   ctx.fillStyle='#090807';ctx.fillRect(slot.x-17,slot.y-18,slot.w+34,slot.h+36);
@@ -358,6 +364,7 @@ function updatePosterRatio(){
  if(preview.dataset.renderKey===key)return;
  preview.dataset.renderKey=key;preview.width=Math.max(240,Math.round(840*w/h));preview.height=840;
  preview.parentElement.style.setProperty('--preview-ratio',w+' / '+h);
+ $('formatPreviewLabel').textContent=tt.count+' FRAMES / '+w+' × '+h;
  $('saveBtn').textContent='↓ 下载当前相纸 · '+w+'×'+h+' PNG';
 }
 function renderCapturedShots(){
@@ -378,7 +385,7 @@ function drawTemplate(ctx,tt,opts={}){if(tt.type==='series'){drawSeries(ctx,tt,o
 }
 function drawPoster(canvas,tt,opts={}){const c=canvas.getContext('2d',{alpha:false});if(!c)return;c.save();c.setTransform(canvas.width/BASE_W,0,0,canvas.height/BASE_H,0,0);drawTemplate(c,tt,opts);c.restore()}
 function drawFrame(now){if(now-app.lastFrame>=40){if(document.body.classList.contains('studio-on')){renderStudio()}else{drawPoster(preview,t())}app.lastFrame=now}requestAnimationFrame(drawFrame)}
-function createControls(){const tParent=$('templates'),sizeParent=$('formatGroup'),fParent=$('filters');for(const temp of templates.filter(item=>item.type!=='saved'&&item.type!=='custom')){const b=document.createElement('button');b.className='template'+(temp.id===app.template?' active':'');b.dataset.id=temp.id;b.setAttribute('aria-pressed',temp.id===app.template);const thumb=document.createElement('canvas');thumb.width=144;thumb.height=192;thumb.className='thumb';b.appendChild(thumb);const n=document.createElement('span');n.className='template-name';n.textContent=temp.name;const sub=document.createElement('span');sub.className='template-sub';sub.textContent=temp.sub;b.append(n,sub);b.addEventListener('click',()=>selectTemplate(temp.id));(temp.type==='series'?sizeParent:tParent).appendChild(b);if(temp.outputW){thumb.width=160;thumb.height=Math.round(160*temp.outputH/temp.outputW)}drawPoster(thumb,temp,{thumbnail:true})}
+function createControls(){const tParent=$('templates'),sizeParent=$('formatGroup'),fParent=$('filters');for(const temp of templates.filter(item=>item.type!=='saved'&&item.type!=='custom'&&!item.familyId)){const b=document.createElement('button');b.className='template'+(temp.id===app.template?' active':'');b.dataset.id=temp.id;b.setAttribute('aria-pressed',temp.id===app.template);const thumb=document.createElement('canvas');thumb.width=144;thumb.height=192;thumb.className='thumb';b.appendChild(thumb);const n=document.createElement('span');n.className='template-name';n.textContent=temp.name;const sub=document.createElement('span');sub.className='template-sub';sub.textContent=temp.sub;b.append(n,sub);b.addEventListener('click',()=>selectTemplate(temp.id));(temp.type==='series'?sizeParent:tParent).appendChild(b);if(temp.outputW){thumb.width=160;thumb.height=Math.round(160*temp.outputH/temp.outputW)}drawPoster(thumb,temp,{thumbnail:true})}
  for(const filter of filters){const b=document.createElement('button');b.className='filter'+(filter.id===app.filter?' active':'');b.dataset.id=filter.id;b.setAttribute('aria-pressed',filter.id===app.filter);const sw=document.createElement('div');sw.className='swatch';sw.style.background=filter.swatch;const n=document.createElement('b');n.textContent=filter.name;const sub=document.createElement('small');sub.textContent=filter.sub;b.append(sw,n,sub);b.addEventListener('click',()=>selectFilter(filter.id));fParent.appendChild(b)}}
 function refreshActive(){document.querySelectorAll('.template').forEach(el=>{const v=el.dataset.id===app.template;el.classList.toggle('active',v);el.setAttribute('aria-pressed',v)});document.querySelectorAll('.filter').forEach(el=>{const v=el.dataset.id===app.filter;el.classList.toggle('active',v);el.setAttribute('aria-pressed',v)});for(const v of ['intensity','grain','leak']){$(v).value=app[v];$(v+'Val').textContent=app[v]+'%'}countStatus()}
 function selectTemplate(id){if(app.template===id)return;cancelCapture();app.template=id;const cfg=t();app.filter=cfg.filter;app.grain=cfg.grain;app.leak=cfg.leak;app.intensity=cfg.intensity??85;app.shots=[];refreshActive();renderMyDesigns();setMsg(`已切换「${cfg.name}」：绑定 ${f().name} 滤镜，重新开始拍摄。`)}
