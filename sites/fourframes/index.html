@@ -445,22 +445,31 @@ rememberStudio();
 const COLLECTION_KEY='fourframes-my-designs-v1';
 let editingSavedId=null,savedDesigns=[];
 function collectionTemplate(record){return {id:record.id,type:'saved',name:record.name,sub:'我的设计 · '+record.scene.items.filter(x=>x.type==='photo').length+'格',count:Math.max(1,record.scene.items.filter(x=>x.type==='photo').length),filter:record.filter||'sepia',intensity:record.intensity??85,grain:record.grain??60,leak:record.leak??25,scene:record.scene}}
+function collectionVariants(record){
+ if(!record.family)return [collectionTemplate(record)];
+ return FORMATS.map(fmt=>({id:record.id+'--'+fmt.key,familyId:record.id,type:'series',format:fmt.key,name:record.name+' / '+fmt.name,sub:fmt.w+'×'+fmt.h,count:fmt.count,outputW:fmt.w,outputH:fmt.h,filter:record.filter||'sepia',intensity:record.intensity??85,grain:record.grain??60,leak:record.leak??25,scene:record.scene}));
+}
 try{
  const parsed=JSON.parse(localStorage.getItem(COLLECTION_KEY)||'[]');
  if(Array.isArray(parsed))savedDesigns=parsed.slice(0,24).map(d=>({...d,name:String(d.name||'我的相纸').slice(0,32),scene:normalizeStudio(d.scene)}));
 }catch(e){savedDesigns=[]}
-for(const rec of savedDesigns)templates.push(collectionTemplate(rec));
+for(const rec of savedDesigns)templates.push(...collectionVariants(rec));
 function renderMyDesigns(){
  const root=$('myDesigns');if(!root)return;root.replaceChildren();$('myDesignCount').textContent=savedDesigns.length+' SAVED';
  if(!savedDesigns.length){const empty=document.createElement('div');empty.className='my-design-empty';const top=document.createElement('span');top.textContent='你的胶片收藏夹还空着';const sub=document.createElement('small');sub.textContent='去设计台保存第一张属于你的相纸';empty.append(top,sub);root.appendChild(empty);return}
  for(const rec of savedDesigns){
-  const item=document.createElement('div');item.className='my-design-card'+(app.template===rec.id?' active':'');
+  const item=document.createElement('div');item.className='my-design-card'+((app.template===rec.id||app.template.startsWith(rec.id+'--'))?' active':'');
   const open=document.createElement('button');open.type='button';open.setAttribute('aria-label','使用模板 '+rec.name);
   const thumb=document.createElement('canvas');thumb.width=180;thumb.height=240;open.appendChild(thumb);
   const name=document.createElement('span');name.className='my-design-name';name.textContent=rec.name;
-  const sub=document.createElement('span');sub.className='my-design-meta';sub.textContent=rec.scene.items.filter(x=>x.type==='photo').length+' FRAMES · USE';open.append(name,sub);
-  open.addEventListener('click',()=>selectTemplate(rec.id));
-  const actions=document.createElement('div');actions.className='my-design-actions';
+  const sub=document.createElement('span');sub.className='my-design-meta';sub.textContent=rec.family?'4 FORMATS · SHARED LOOK':rec.scene.items.filter(x=>x.type==='photo').length+' FRAMES · USE';open.append(name,sub);
+  open.addEventListener('click',()=>selectTemplate(rec.family?rec.id+'--grid4':rec.id));
+  if(rec.family){
+    const variants=document.createElement('div');variants.className='my-design-variants';
+    for(const fmt of FORMATS){const btn=document.createElement('button');btn.type='button';btn.textContent=fmt.name;btn.classList.toggle('active',app.template===rec.id+'--'+fmt.key);btn.addEventListener('click',()=>selectTemplate(rec.id+'--'+fmt.key));variants.appendChild(btn)}
+    item.appendChild(variants);
+   }
+   const actions=document.createElement('div');actions.className='my-design-actions';
   const edit=document.createElement('button');edit.textContent='✎ 编辑';edit.addEventListener('click',()=>{
     cancelCapture();studio=normalizeStudio(JSON.parse(JSON.stringify(rec.scene)));editingSavedId=rec.id;selectedId=studio.items.find(x=>x.type==='photo')?.id||studio.items[0]?.id||null;
     $('designName').value=rec.name;$('saveToCollection').textContent='✦ 更新模板';rememberStudio();refreshStudioConfig();refreshInspector();studioView('studio');studioStatus('正在编辑已保存模板「'+rec.name+'」。点击更新模板以覆盖该版本。');
@@ -469,13 +478,13 @@ function renderMyDesigns(){
     if(!confirm('确定删除模板「'+rec.name+'」吗？这个操作无法撤销。'))return;
     const next=savedDesigns.filter(x=>x.id!==rec.id);
     try{localStorage.setItem(COLLECTION_KEY,JSON.stringify(next))}catch(e){setMsg('删除失败，请检查浏览器存储空间。',true);return}
-    savedDesigns=next;const at=templates.findIndex(x=>x.id===rec.id);if(at>=0)templates.splice(at,1);
+    savedDesigns=next;for(let i=templates.length-1;i>=0;i--)if(templates[i].id===rec.id||templates[i].familyId===rec.id)templates.splice(i,1);
     if(editingSavedId===rec.id){editingSavedId=null;$('saveToCollection').textContent='✦ 保存模板'}
-    if(app.template===rec.id){app.template='portra';app.shots=[];const d=t();app.filter=d.filter;app.grain=d.grain;app.leak=d.leak;app.intensity=85;refreshActive()}
+    if(app.template===rec.id||app.template.startsWith(rec.id+'--')){app.template='series-strip4';app.shots=[];const d=t();app.filter=d.filter;app.grain=d.grain;app.leak=d.leak;app.intensity=d.intensity??85;refreshActive()}
     renderMyDesigns();setMsg('已从「我的设计」中删除该模板。');
   });
   actions.append(edit,del);item.append(open,actions);root.appendChild(item);
-  const savedTemplate=templates.find(x=>x.id===rec.id);if(savedTemplate)drawPoster(thumb,savedTemplate,{thumbnail:true});
+  const savedTemplate=templates.find(x=>x.id===(rec.family?rec.id+'--grid4':rec.id));if(savedTemplate){if(savedTemplate.outputW){thumb.width=160;thumb.height=Math.round(160*savedTemplate.outputH/savedTemplate.outputW)}drawPoster(thumb,savedTemplate,{thumbnail:true})}
  }
 }
 function saveDesignToCollection(){
@@ -485,11 +494,11 @@ function saveDesignToCollection(){
  const name=($('designName').value||'我的复古相纸').trim().slice(0,32)||'我的复古相纸';
  const id=editingSavedId||'mine-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
  if(!editingSavedId&&savedDesigns.length>=24){studioStatus('最多保留 24 个模板，请删除旧模板后重试。');return}
- const rec={id,name,scene:normalizeStudio(JSON.parse(deepStudio())),filter:app.filter,intensity:app.intensity,grain:app.grain,leak:app.leak,updatedAt:Date.now()};
+ const rec={id,name,family:true,scene:normalizeStudio(JSON.parse(deepStudio())),filter:app.filter,intensity:app.intensity,grain:app.grain,leak:app.leak,updatedAt:Date.now()};
  const next=[rec,...savedDesigns.filter(x=>x.id!==id)];
  try{localStorage.setItem(COLLECTION_KEY,JSON.stringify(next))}catch(e){studioStatus('无法保存：浏览器空间不足或处于无痕模式。请导出 JSON 备份后重试。');return}
- savedDesigns=next;let i=templates.findIndex(x=>x.id===id);if(i<0)templates.push(collectionTemplate(rec));else templates[i]=collectionTemplate(rec);
- if(app.template===id){cancelCapture();app.shots=[];refreshActive()}editingSavedId=id;$('saveToCollection').textContent='✦ 更新模板';renderMyDesigns();studioStatus('已保存「'+name+'」！切换到「01 / 拍照暗房」，在「我的设计」里直接选择它。');
+ savedDesigns=next;for(let i=templates.length-1;i>=0;i--)if(templates[i].id===id||templates[i].familyId===id)templates.splice(i,1);templates.push(...collectionVariants(rec));
+ if(app.template===id||app.template.startsWith(id+'--')){cancelCapture();app.template=id+'--grid4';app.shots=[];refreshActive()}editingSavedId=id;$('saveToCollection').textContent='✦ 更新模板';renderMyDesigns();studioStatus('已保存「'+name+'」的四种尺寸！在拍照暗房「我的设计」中选择。');
 }
 $('saveToCollection').addEventListener('click',saveDesignToCollection);
 $('newDesignFromCamera').addEventListener('click',()=>{editingSavedId=null;$('saveToCollection').textContent='✦ 保存模板';$('designName').value='我的复古相纸 '+String(savedDesigns.length+1).padStart(2,'0');studio=studioSeed();selectedId='p1';rememberStudio();refreshStudioConfig();refreshInspector();studioView('studio')});
