@@ -86,6 +86,71 @@ body.studio-on .layout{display:none}body:not(.studio-on) .studio-root{display:no
 .design-name-label{display:flex;align-items:center;gap:6px;font:10px 'Special Elite',monospace;color:#d4b28b}.design-name-label input{background:#f5e8d5;border:1px solid #ba9470;border-radius:2px;color:#4c3020;padding:8px;width:132px;font-size:11px}.save-design{border-color:#d8b57e;background:#473121;color:#f9ddb5}.save-design:hover{background:#6b4829!important}
 @media(max-width:1000px){.layout{grid-template-columns:1fr}.preview-wrap{position:static}.side{width:100%}.my-design-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:650px){header{height:80px}header:after{display:none}.brand-name{font-size:17px;letter-spacing:.03em}.brand-sub{font-size:8px;letter-spacing:.07em}.header-right{display:none}.preview-wrap{padding:13px}.shutter-button{width:72px;height:72px}.shutter-button .shutter-core{width:53px;height:53px}.my-design-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.my-design-section{padding:12px}.design-name-label{width:100%;order:2;justify-content:space-between}.design-name-label input{flex:1}.save-design{order:3;flex:1}.studio-center .editor-toolbar{gap:6px}}
+
+/* Edition 04 · fixed camera + independent scrolling right column */
+body:not(.studio-on){overflow:hidden}
+body:not(.studio-on) .shell{height:100dvh;display:flex;flex-direction:column;padding-bottom:12px;max-width:1540px}
+body:not(.studio-on) header{flex:0 0 88px;height:88px}
+body:not(.studio-on) .topnav{flex:0 0 auto;margin-top:12px}
+body:not(.studio-on) .layout{flex:1;min-height:0;overflow:hidden;grid-template-columns:minmax(340px,.94fr) minmax(420px,1.06fr);gap:20px;padding-top:12px;align-items:stretch}
+body:not(.studio-on) .preview-wrap{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:12px 16px}
+body:not(.studio-on) .canvas-stage{flex:1;min-height:32px;margin:8px 0;padding:3px;overflow:hidden}
+body:not(.studio-on) .canvas-shell{height:100%;width:auto;max-width:100%;aspect-ratio:var(--preview-ratio, 3 / 4);border-width:7px;flex-shrink:0}
+body:not(.studio-on) .canvas-shell canvas{width:100%;height:100%;object-fit:fill}
+body:not(.studio-on) .stage-footer{padding-top:7px;font-size:9px}
+body:not(.studio-on) .camera-deck{margin-top:8px;padding:10px 2px 0}
+body:not(.studio-on) .capture-progress small{margin-top:3px}
+body:not(.studio-on) .shutter-deck{margin:10px 0 9px}
+body:not(.studio-on) .shutter-button{height:65px;width:65px}
+body:not(.studio-on) .shutter-button .shutter-core{height:46px;width:46px}
+body:not(.studio-on) .shutter-side{height:42px;width:42px}
+body:not(.studio-on) .shutter-side span{top:47px}
+body:not(.studio-on) .deck-settings{padding:9px 0 1px}
+body:not(.studio-on) .deck-feedback{margin-top:7px;min-height:14px}
+body:not(.studio-on) .export-under{margin-top:8px;padding:10px}
+body:not(.studio-on) .side{height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding-right:12px;padding-bottom:28px;scrollbar-color:#8f6a43 #201912;scrollbar-width:thin}
+body:not(.studio-on) .side::-webkit-scrollbar{width:7px}
+body:not(.studio-on) .side::-webkit-scrollbar-thumb{background:#886646;border-radius:8px}
+body:not(.studio-on) .side::-webkit-scrollbar-track{background:#211a15}
+body:not(.studio-on) .side-title{font-size:34px}
+body:not(.studio-on) .side-title em{font-size:36px}
+body:not(.studio-on) .intro{margin-bottom:11px}
+body:not(.studio-on) .my-design-section{margin-top:12px}
+.template-list .thumb,.my-design-card canvas{height:132px;width:100%;object-fit:contain;aspect-ratio:auto;background:#100d0b}
+.series-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.series-list .template{border-color:#8c6a46}
+.series-list .template-sub{line-height:1.4;white-space:normal}
+.size-explain{font:11px/1.6 'Special Elite',monospace;color:#baa385;margin:6px 0 12px}
+.capture-gallery{border:1px solid #725135;background:#221a15;padding:12px 14px;margin:12px 0;border-radius:3px}
+.capture-gallery .section-heading{margin-bottom:8px}
+.capture-gallery-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.capture-gallery-item{min-width:0;background:#100d0b;border:1px solid #654c39;padding:5px}
+.capture-gallery-item canvas{display:block;width:100%;height:86px;object-fit:contain;background:#29221c}
+.capture-gallery-item small{font:10px 'Special Elite',monospace;display:block;padding:6px 2px 2px;color:#d7b48a}
+.capture-gallery-empty{grid-column:1/-1;font:11px 'Special Elite',monospace;color:#aa9279;padding:10px 0}
+.my-design-variants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:6px;border-top:1px solid #473427}
+.my-design-variants button{background:#33251b;border:1px solid #81603e;color:#f0cf9f;font:9px 'Special Elite',monospace;padding:7px 2px;cursor:pointer}
+.my-design-variants button:hover,.my-design-variants button.active{background:#a57a4d;color:#1e130e}
+.studio-group-note{background:#3c2919;border:1px solid #a57b4d;color:#f4d1a4;padding:10px 13px;font:12px/1.7 'Special Elite',monospace;margin-bottom:12px}
+.studio-format-previews{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.studio-format-previews button{background:#251a12;border:1px solid #835b38;color:#e9c699;cursor:pointer;font:10px 'Special Elite',monospace;padding:7px}
+.studio-format-previews canvas{display:block;height:120px;width:100%;object-fit:contain;background:#0d0b09;margin-bottom:6px}
+@media(max-height:750px) and (min-width:981px){
+ body:not(.studio-on) .preview-wrap{padding:9px 13px}
+ body:not(.studio-on) .shutter-button{height:54px;width:54px}
+ body:not(.studio-on) .shutter-button .shutter-core{height:37px;width:37px}
+ body:not(.studio-on) .shutter-deck{margin:7px 0 6px}
+ body:not(.studio-on) .deck-settings{padding:6px 0}
+}
+@media(max-width:980px){
+ body:not(.studio-on){overflow:auto}
+ body:not(.studio-on) .shell{height:auto;display:block}
+ body:not(.studio-on) .layout{height:auto;display:grid;grid-template-columns:1fr;overflow:visible;gap:14px}
+ body:not(.studio-on) .preview-wrap{height:auto;min-height:0;overflow:visible}
+ body:not(.studio-on) .canvas-stage{height:min(60vh,550px);min-height:260px;flex:none}
+ body:not(.studio-on) .side{height:auto;overflow:visible;padding-right:0}
+}
+
   </style>
 </head>
 <body>
@@ -112,14 +177,16 @@ body.studio-on .layout{display:none}body:not(.studio-on) .studio-root{display:no
       <aside class="side">
         <div class="eyebrow" style="margin-top:8px">FILM CAMERA / EXPERIMENT 01</div>
         <h1 class="side-title">把生活拍成<br/><em style="font-style:italic;color:var(--accent)">一卷旧胶片。</em></h1>
-        <p class="intro">选择胶片模板，或使用你亲手设计的相纸。左侧按下快门，就能把每一格记忆定格成复古照片。</p>
+        <p class="intro">左侧取景器与快门固定，右侧独立滚动。四种尺寸共享菲林边框、贴纸、文字和滤镜。</p>
+         <section class="capture-gallery" aria-label="已拍照片"><div class="section-heading"><h2>已拍照片 / CAPTURED</h2><span id="capturedCount">0 SHOTS</span></div><div id="capturedShots" class="capture-gallery-grid"><div class="capture-gallery-empty">按下左侧快门，照片会出现在这里</div></div></section>
         <section class="my-design-section" aria-label="我的设计">
           <div class="section-heading"><h2>✦ MY COLLECTION / 我的设计</h2><span id="myDesignCount">0 SAVED</span></div>
           <div class="collection-intro">在模板设计台点击「保存模板」，你的作品就会出现在这里，直接选用拍照。</div>
           <div id="myDesigns" class="my-design-grid"></div>
           <button id="newDesignFromCamera" class="collection-add" type="button">＋ 新建设计 / OPEN ATELIER</button>
         </section>
-        <section class="section"><div class="section-heading"><h2>01 / 选择相纸模板</h2><span>7 TEMPLATES</span></div><div id="templates" class="template-list"></div></section>
+        <section class="section"><div class="section-heading"><h2>01 / 同一系列 · 四种尺寸</h2><span>4 FORMATS</span></div><p class="size-explain">共享胶片底色、贴纸与文字，只重排照片框。导出时使用准确的画布像素尺寸。</p><div id="formatGroup" class="template-list series-list"></div></section>
+         <section class="section"><div class="section-heading"><h2>02 / 其他复古相纸</h2><span>ORIGINAL SERIES</span></div><div id="templates" class="template-list"></div></section>
         <section class="section"><div class="section-heading"><h2>02 / 选择复古滤镜</h2><span>7 COLOR LOOKS</span></div><div id="filters" class="filters"></div></section>
         <section class="sliders" aria-label="滤镜参数"><div class="slider-row"><label for="intensity">调色强度</label><input type="range" id="intensity" min="0" max="100" value="85"/><output id="intensityVal">85%</output></div><div class="slider-row"><label for="grain">胶片颗粒</label><input type="range" id="grain" min="0" max="100" value="54"/><output id="grainVal">54%</output></div><div class="slider-row"><label for="leak">胶片漏光</label><input type="range" id="leak" min="0" max="100" value="26"/><output id="leakVal">26%</output></div></section>
         <p class="footer-tip"><b>本地隐私：</b>摄像头画面只在浏览器内处理，不会上传到服务器。建议在 Chrome / Edge / Safari 的安全环境（localhost 或 HTTPS）打开。这里的复古调色是可交互的演示算法，尚未替换为最终产品级的 3D LUT GPU 管线。</p>
@@ -148,8 +215,8 @@ body.studio-on .layout{display:none}body:not(.studio-on) .studio-root{display:no
         <span class="toolbar-spacer"></span><label class="design-name-label">作品名称 <input id="designName" maxlength="32" value="我的复古相纸" aria-label="模板作品名称"/></label><button id="saveToCollection" class="toolbtn save-design" type="button">✦ 保存模板</button>
         <button id="applyStudio" class="toolbtn gold" type="button">◉ 使用模板拍照</button>
       </div>
-      <div class="design-stage"><canvas id="editorCanvas" class="editor-canvas" width="900" height="1200" aria-label="可拖拽编辑的四格模板画布"></canvas></div>
-      <div class="stage-help"><span>单击选择 / 拖拽移动 / 右下缩放 / 顶部圆点旋转</span><span>DELETE / 方向键</span></div>
+      <div class="studio-group-note">✦ 共享设计模式：修改这里的贴纸、文字、底纸及色调后，保存时自动生成四种画布尺寸。照片框按照各尺寸的固定布局排列。</div><div class="design-stage"><canvas id="editorCanvas" class="editor-canvas" width="900" height="1200" aria-label="可拖拽编辑的四格模板画布"></canvas></div>
+      <div class="stage-help"><span>单击选择 / 拖拽移动 / 右下缩放 / 顶部圆点旋转</span><span>DELETE / 方向键</span></div><div id="studioFormatPreviews" class="studio-format-previews" aria-label="共享设计四尺寸预览"></div>
       <div class="editor-toolbar" style="margin-top:12px;margin-bottom:0"><button id="exportDesign" class="toolbtn gold" type="button">↓ 导出效果 PNG</button><button id="exportJSON" class="toolbtn" type="button">↓ 导出模板 JSON</button><button id="importJSON" class="toolbtn" type="button">↑ 导入模板</button><input id="importJSONFile" type="file" accept=".json,application/json" hidden/><button id="resetDesign" class="toolbtn" type="button">↺ 恢复初始设计</button></div>
     </div>
     <aside class="studio-panel props-panel"><div class="studio-panel-head"><h3>02 / 图层与参数</h3><small>PROPERTY INSPECTOR</small></div>
