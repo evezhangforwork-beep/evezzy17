@@ -619,7 +619,27 @@ function drawTextItem(ctx,it){ctx.save();ctx.translate(it.x+it.w/2,it.y+it.h/2);
 const imageStickerCache=new Map();
 function drawImageSticker(ctx,it){if(!it.src)return;let img=imageStickerCache.get(it.src);if(!img){img=new Image();imageStickerCache.set(it.src,img);img.onload=()=>{renderStudio();renderMyDesigns()};img.src=it.src;return}if(!img.complete||!img.naturalWidth)return;ctx.save();ctx.translate(it.x+it.w/2,it.y+it.h/2);ctx.rotate((it.r||0)*Math.PI/180);ctx.globalAlpha=it.opacity??1;ctx.drawImage(img,-it.w/2,-it.h/2,it.w,it.h);ctx.restore()}
 function renderCustomScene(ctx,scene=studio,opts={}){studioPaper(ctx,scene);for(const it of scene.items){if(it.type==='photo')drawPhotoItem(ctx,it,opts);else if(it.type==='text')drawTextItem(ctx,it);else if(it.type==='image')drawImageSticker(ctx,it);else stickerDraw(ctx,it)}}
-function renderStudio(){if(!document.body.classList.contains('studio-on'))return;editorCtx.clearRect(0,0,BASE_W,BASE_H);renderCustomScene(editorCtx);drawSelection(editorCtx)}
+function buildStudioFormatPreviews(){
+ const root=$('studioFormatPreviews');if(!root)return;root.replaceChildren();
+ for(const fmt of FORMATS){
+  const button=document.createElement('button');button.type='button';button.title='切换到 '+fmt.name+' 拍摄';
+  const c=document.createElement('canvas');c.width=96;c.height=Math.round(96*fmt.h/fmt.w);c.dataset.format=fmt.key;
+  const label=document.createElement('span');label.textContent=fmt.name+' · '+fmt.w+'×'+fmt.h;
+  button.append(c,label);
+  button.addEventListener('click',()=>{selectTemplate('series-'+fmt.key);studioView('camera')});
+  root.appendChild(button);
+ }
+ updateStudioFormatPreviews();
+}
+let lastStudioFormatPaint=0;
+function updateStudioFormatPreviews(){
+ const root=$('studioFormatPreviews');if(!root)return;
+ for(const c of root.querySelectorAll('canvas')){
+  const fmt=FORMAT_BY_KEY[c.dataset.format];if(!fmt)continue;
+  drawPoster(c,{type:'series',format:fmt.key,scene:studio},{thumbnail:true});
+ }
+}
+function renderStudio(){if(!document.body.classList.contains('studio-on'))return;editorCtx.clearRect(0,0,BASE_W,BASE_H);renderCustomScene(editorCtx);drawSelection(editorCtx);const now=performance.now();if(now-lastStudioFormatPaint>500){lastStudioFormatPaint=now;updateStudioFormatPreviews()}}
 function drawSelection(ctx){const it=getSelected();if(!it)return;ctx.save();ctx.translate(it.x+it.w/2,it.y+it.h/2);ctx.rotate((it.r||0)*Math.PI/180);ctx.strokeStyle='#e7bc76';ctx.lineWidth=3;ctx.setLineDash([11,6]);ctx.strokeRect(-it.w/2,-it.h/2,it.w,it.h);ctx.setLineDash([]);function mark(x,y,fill){ctx.fillStyle=fill;ctx.strokeStyle='#322016';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,11,0,2*Math.PI);ctx.fill();ctx.stroke()}mark(it.w/2,it.h/2,'#f8d6a3');ctx.beginPath();ctx.moveTo(0,-it.h/2);ctx.lineTo(0,-it.h/2-43);ctx.strokeStyle='#e8bc7f';ctx.lineWidth=2;ctx.stroke();mark(0,-it.h/2-44,'#ffdd9c');ctx.restore()}
 function editorPoint(e){const r=editor.getBoundingClientRect();return {x:(e.clientX-r.left)*BASE_W/r.width,y:(e.clientY-r.top)*BASE_H/r.height}}
 function rotatedLocal(it,p){const cx=it.x+it.w/2,cy=it.y+it.h/2,a=-(it.r||0)*Math.PI/180,dx=p.x-cx,dy=p.y-cy;return{x:dx*Math.cos(a)-dy*Math.sin(a),y:dx*Math.sin(a)+dy*Math.cos(a)}}
@@ -694,7 +714,7 @@ refreshStudioConfig();refreshInspector();
 // Insert custom choice before initial UI generation. Shared rendering and capture engine.
 
 // drawTemplate() delegates to renderCustomScene() for this template (patched below).
-createControls();refreshActive();renderMyDesigns();
+createControls();refreshActive();renderMyDesigns();buildStudioFormatPreviews();
 
 requestAnimationFrame(drawFrame);
 // Browser permission prompts are managed by the browser, and usually remembered per origin.
