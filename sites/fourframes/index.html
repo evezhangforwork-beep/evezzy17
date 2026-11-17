@@ -612,7 +612,7 @@ const STICKERS = [
   {kind:'arrow',name:'手绘箭头',cat:'手绘',w:290,h:130,color:'#dcc1a4'},
 ];
 const FONT_FALLBACK = {'Special Elite':'monospace','IM Fell English':'Georgia,serif','Cormorant Garamond':'Georgia,serif','Caveat':'cursive','Georgia':'serif'};
-const studioSeed = () => ({bg:'#221a17',texture:'aged',items:[
+const studioSeed = () => ({canvasKey:'portrait34',bg:'#221a17',texture:'aged',items:[
   {id:'s-frame',type:'sticker',kind:'filmrail',x:48,y:87,w:804,h:1030,r:0,color:'#120e0b',opacity:1},
   {id:'p1',type:'photo',index:0,x:118,y:164,w:300,h:390,r:-1,opacity:1},
   {id:'p2',type:'photo',index:1,x:475,y:164,w:300,h:390,r:1,opacity:1},
@@ -625,7 +625,20 @@ const studioSeed = () => ({bg:'#221a17',texture:'aged',items:[
   {id:'txt-2',type:'text',content:'MEMORIES ON FILM  /  NO. 004',font:'Special Elite',fontSize:18,x:146,y:1131,w:610,h:32,r:0,color:'#cbb08c',opacity:.8}
 ]});
 const STUDIO_MAX=70;
-function syncPhotoSlots(){const ps=studio.items.filter(it=>it.type==='photo');ps.forEach((it,i)=>it.index=i);const tt=templates.find(x=>x.id==='custom');if(tt){tt.count=Math.max(1,ps.length);if(app.template==='custom'){app.shots.length=Math.min(app.shots.length,tt.count);countStatus()}}}
+function studioSize(scene=studio){return DESIGN_BY_KEY[scene?.canvasKey]||DESIGN_BY_KEY.portrait34}
+function studioLogicalHeight(scene=studio){const z=studioSize(scene);return Math.round(BASE_W*z.h/z.w)}
+function studioRecommendedFrames(key){
+ const fmt=FORMAT_BY_KEY[key],h=studioLogicalHeight({canvasKey:key});
+ if(fmt){const scale=BASE_W/fmt.w;return fmt.xy.map(([x,y],i)=>({id:'p'+(i+1),type:'photo',index:i,x:Math.round(x*scale),y:Math.round(y*scale),w:Math.round(fmt.pw*scale),h:Math.round(fmt.ph*scale),r:0,opacity:1}))}
+ const gap=48,side=60,fw=Math.floor((BASE_W-side*2-gap)/2),fh=Math.floor(Math.min(500,(h-180-gap)/2)),top=Math.max(65,Math.floor((h-(fh*2+gap))/2));
+ return Array.from({length:4},(_,i)=>({id:'p'+(i+1),type:'photo',index:i,x:side+(i%2)*(fw+gap),y:top+Math.floor(i/2)*(fh+gap),w:fw,h:fh,r:0,opacity:1}));
+}
+function syncPhotoSlots(){
+ const ps=studio.items.filter(it=>it.type==='photo');ps.forEach((it,i)=>it.index=i);
+ const tt=templates.find(x=>x.id==='custom');
+ if(tt){const z=studioSize();tt.count=Math.max(1,ps.length);tt.outputW=z.w;tt.outputH=z.h;
+  if(app.template==='custom'){app.shots.length=Math.min(app.shots.length,tt.count);countStatus()}}
+}
 let studio=studioSeed(), selectedId='p1', drag=null,history=[],historyIndex=-1,lastStudioRender=0, uid=0;
 const editor=$('editorCanvas'), editorCtx=editor.getContext('2d');
 const uidNext=()=> 'l'+(++uid)+'-'+Date.now().toString(36);
@@ -643,13 +656,13 @@ function normalizeStudio(data){
   if(!data||!Array.isArray(data.items)||data.items.length>100)throw Error('JSON 模板结构不正确或图层数量过多');
   const safeHex = v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v:'#d4b48c';
   const allowedKinds=new Set(STICKERS.map(x=>x.kind));
-  return {bg:safeHex(data.bg),texture:['aged','grain','dots','plain'].includes(data.texture)?data.texture:'aged',items:data.items.map((it,i)=>({
+  return {canvasKey:DESIGN_BY_KEY[data.canvasKey]?data.canvasKey:'portrait34',bg:safeHex(data.bg),texture:['aged','grain','dots','plain'].includes(data.texture)?data.texture:'aged',items:data.items.map((it,i)=>({
      id:String(it.id||'x'+i).slice(0,50),type:['photo','text','sticker','image'].includes(it.type)?it.type:'text',
      kind:allowedKinds.has(it.kind)?it.kind:'stars',content:String(it.content||'').slice(0,350),src:(typeof it.src==='string'&&/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(it.src)&&it.src.length<2000000)?it.src:'',
      index:Math.max(0,Math.min(7,Number(it.index)||0)),font:FONT_FALLBACK[it.font]?it.font:'Special Elite',
      fontSize:Math.max(10,Math.min(220,Number(it.fontSize)||35)),
-     x:Math.max(-800,Math.min(1500,Number(it.x)||0)),y:Math.max(-1100,Math.min(1800,Number(it.y)||0)),
-     w:Math.max(20,Math.min(1200,Number(it.w)||200)),h:Math.max(20,Math.min(1400,Number(it.h)||150)),
+     x:Math.max(-900,Math.min(2000,Number(it.x)||0)),y:Math.max(-1200,Math.min(3600,Number(it.y)||0)),
+     w:Math.max(20,Math.min(1600,Number(it.w)||200)),h:Math.max(20,Math.min(3500,Number(it.h)||150)),
      r:Math.max(-360,Math.min(360,Number(it.r)||0)),color:safeHex(it.color),opacity:Math.max(0,Math.min(1,Number(it.opacity??1)))
   }))};
 }
@@ -658,7 +671,12 @@ rememberStudio();
 // Independent collection snapshots. Editing the draft never mutates already saved templates.
 const COLLECTION_KEY='fourframes-my-designs-v1';
 let editingSavedId=null,savedDesigns=[];
-function collectionTemplate(record){return {id:record.id,type:'saved',name:record.name,sub:'我的设计 · '+record.scene.items.filter(x=>x.type==='photo').length+'格',count:Math.max(1,record.scene.items.filter(x=>x.type==='photo').length),filter:record.filter||'sepia',intensity:record.intensity??85,grain:record.grain??60,leak:record.leak??25,scene:record.scene}}
+function collectionTemplate(record){
+ const size=studioSize(record.scene);
+ return {id:record.id,type:'saved',name:record.name,sub:size.name+' · '+record.scene.items.filter(x=>x.type==='photo').length+'格',
+ count:Math.max(1,record.scene.items.filter(x=>x.type==='photo').length),outputW:size.w,outputH:size.h,
+ filter:record.filter||'sepia',intensity:record.intensity??85,grain:record.grain??60,leak:record.leak??25,scene:record.scene};
+}
 function collectionVariants(record){
  if(!record.family)return [collectionTemplate(record)];
  return FORMATS.map(fmt=>({id:record.id+'--'+fmt.key,familyId:record.id,type:'series',format:fmt.key,name:record.name+' / '+fmt.name,sub:fmt.w+'×'+fmt.h,count:fmt.count,outputW:fmt.w,outputH:fmt.h,filter:record.filter||'sepia',intensity:record.intensity??85,grain:record.grain??60,leak:record.leak??25,scene:record.scene}));
@@ -676,7 +694,7 @@ function renderMyDesigns(){
   const open=document.createElement('button');open.type='button';open.setAttribute('aria-label','使用模板 '+rec.name);
   const thumb=document.createElement('canvas');thumb.width=180;thumb.height=240;open.appendChild(thumb);
   const name=document.createElement('span');name.className='my-design-name';name.textContent=rec.name;
-  const sub=document.createElement('span');sub.className='my-design-meta';sub.textContent=rec.family?'4 FORMATS · SHARED LOOK':rec.scene.items.filter(x=>x.type==='photo').length+' FRAMES · USE';open.append(name,sub);
+  const sub=document.createElement('span');sub.className='my-design-meta';sub.textContent=rec.family?'旧版 · 4 FORMATS':(studioSize(rec.scene).w+'×'+studioSize(rec.scene).h+' · '+rec.scene.items.filter(x=>x.type==='photo').length+' FRAMES');open.append(name,sub);
   open.addEventListener('click',()=>selectTemplate(rec.family?rec.id+'--grid4':rec.id));
   if(rec.family){
     const variants=document.createElement('div');variants.className='my-design-variants';
@@ -694,7 +712,7 @@ function renderMyDesigns(){
     try{localStorage.setItem(COLLECTION_KEY,JSON.stringify(next))}catch(e){setMsg('删除失败，请检查浏览器存储空间。',true);return}
     savedDesigns=next;for(let i=templates.length-1;i>=0;i--)if(templates[i].id===rec.id||templates[i].familyId===rec.id)templates.splice(i,1);
     if(editingSavedId===rec.id){editingSavedId=null;$('saveToCollection').textContent='✦ 保存模板'}
-    if(app.template===rec.id||app.template.startsWith(rec.id+'--')){app.template='series-strip4';app.shots=[];const d=t();app.filter=d.filter;app.grain=d.grain;app.leak=d.leak;app.intensity=d.intensity??85;refreshActive()}
+    if(app.template===rec.id||app.template.startsWith(rec.id+'--')){app.template='portra';app.presetId='portra';app.shots=[];const d=t();app.filter=d.filter;app.grain=d.grain;app.leak=d.leak;app.intensity=d.intensity??85;refreshActive()}
     renderMyDesigns();setMsg('已从「我的设计」中删除该模板。');
   });
   actions.append(edit,del);item.insertBefore(open,item.firstChild);item.append(actions);root.appendChild(item);
@@ -708,11 +726,11 @@ function saveDesignToCollection(){
  const name=($('designName').value||'我的复古相纸').trim().slice(0,32)||'我的复古相纸';
  const id=editingSavedId||'mine-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
  if(!editingSavedId&&savedDesigns.length>=24){studioStatus('最多保留 24 个模板，请删除旧模板后重试。');return}
- const rec={id,name,family:true,scene:normalizeStudio(JSON.parse(deepStudio())),filter:app.filter,intensity:app.intensity,grain:app.grain,leak:app.leak,updatedAt:Date.now()};
+ const rec={id,name,scene:normalizeStudio(JSON.parse(deepStudio())),filter:app.filter,intensity:app.intensity,grain:app.grain,leak:app.leak,updatedAt:Date.now()};
  const next=[rec,...savedDesigns.filter(x=>x.id!==id)];
  try{localStorage.setItem(COLLECTION_KEY,JSON.stringify(next))}catch(e){studioStatus('无法保存：浏览器空间不足或处于无痕模式。请导出 JSON 备份后重试。');return}
  savedDesigns=next;for(let i=templates.length-1;i>=0;i--)if(templates[i].id===id||templates[i].familyId===id)templates.splice(i,1);templates.push(...collectionVariants(rec));
- if(app.template===id||app.template.startsWith(id+'--')){cancelCapture();app.template=id+'--grid4';app.shots=[];refreshActive()}editingSavedId=id;$('saveToCollection').textContent='✦ 更新模板';renderMyDesigns();studioStatus('已保存「'+name+'」的四种尺寸！在拍照暗房「我的设计」中选择。');
+ if(app.template===id||app.template.startsWith(id+'--')){cancelCapture();app.template=id;app.shots=[];refreshActive()}editingSavedId=id;$('saveToCollection').textContent='✦ 更新模板';renderMyDesigns();studioStatus('已保存「'+name+'」 · '+studioSize().w+'×'+studioSize().h+'。拍照暗房「我的设计」中可直接使用。');
 }
 $('saveToCollection').addEventListener('click',saveDesignToCollection);
 $('newDesignFromCamera').addEventListener('click',()=>{editingSavedId=null;$('saveToCollection').textContent='✦ 保存模板';$('designName').value='我的复古相纸 '+String(savedDesigns.length+1).padStart(2,'0');studio=studioSeed();selectedId='p1';rememberStudio();refreshStudioConfig();refreshInspector();studioView('studio')});
