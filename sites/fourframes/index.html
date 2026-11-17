@@ -370,31 +370,78 @@ function drawFilmCode(ctx,label,x,y,dark=false,rot=-Math.PI/2){text(ctx,label,x,
 function drawBackground(ctx,tt){switch(tt.type){case 'contact':ctx.fillStyle='#eae8de';break;case 'polaroid':ctx.fillStyle='#e4e4df';break;case 'birthday':ctx.fillStyle='#e7e3d7';break;case 'expired':ctx.fillStyle='#080706';break;case 'film01':ctx.fillStyle='#0e0e0d';break;case 'film02':ctx.fillStyle='#101010';break;default:ctx.fillStyle='#0a0808'}ctx.fillRect(0,0,BASE_W,BASE_H)}
 function drawPaperGrain(ctx){ctx.save();ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.16;for(let y=0;y<BASE_H;y+=190)for(let x=0;x<BASE_W;x+=190)ctx.drawImage(noiseTile,x,y,190,190);ctx.restore()}
 function drawSeries(ctx,tt,opts={}){
- const fmt=FORMAT_BY_KEY[tt.format]||FORMATS[0],w=fmt.w,h=fmt.h,scene=tt.scene||studio;
+ const fmt=FORMAT_BY_KEY[tt.format]||FORMATS[0],w=fmt.w,h=fmt.h;
+ const scene=tt.scene||(!tt.presetId?studio:null);
+ const palette={
+  contact:{paper:'#eae8de',frame:'#faf8ed',ink:'#426074',edge:'#dad6ca'},
+  expired:{paper:'#100d0b',frame:'#30231d',ink:'#bc916f',edge:'#251b16'},
+  film01:{paper:'#0d0d0d',frame:'#070707',ink:'#b1a69c',edge:'#2c2b29'},
+  film02:{paper:'#141210',frame:'#090807',ink:'#d2b493',edge:'#3a3028'},
+  birthday:{paper:'#ede6d7',frame:'#f9f4eb',ink:'#8b6579',edge:'#d9bca8'},
+  polaroid:{paper:'#e4e3dd',frame:'#faf7ef',ink:'#777268',edge:'#d8d1c4'},
+  filmgrid:{paper:'#0d0d0d',frame:'#0c0c0c',ink:'#aea59b',edge:'#27231e'}
+ };
+ const style=palette[tt.presetType]||{paper:scene?.bg||'#211912',frame:'#0e0b0a',ink:'#c6a983',edge:'#30251e'};
  ctx.save();ctx.scale(BASE_W/w,BASE_H/h);
- ctx.fillStyle=scene?.bg||'#211912';ctx.fillRect(0,0,w,h);
- ctx.save();ctx.globalAlpha=.11;ctx.globalCompositeOperation='soft-light';ctx.fillStyle=ctx.createPattern(noiseTile,'repeat');ctx.fillRect(0,0,w,h);ctx.restore();
- if(scene?.texture==='dots'){ctx.save();ctx.globalAlpha=.2;ctx.fillStyle='#d2a877';for(let x=15;x<w;x+=45)for(let y=20;y<h;y+=45){ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill()}ctx.restore()}
- // Render shared film-rail layers beneath the photographic apertures.
+ ctx.fillStyle=style.paper;ctx.fillRect(0,0,w,h);
+ if(!opts.thumbnail){
+  ctx.save();ctx.globalAlpha=.11;ctx.globalCompositeOperation='soft-light';
+  ctx.fillStyle=ctx.createPattern(noiseTile,'repeat');ctx.fillRect(0,0,w,h);ctx.restore();
+ }
+ if(scene?.texture==='dots'){ctx.save();ctx.globalAlpha=.17;ctx.fillStyle='#d2a877';for(let x=15;x<w;x+=45)for(let y=20;y<h;y+=45){ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill()}ctx.restore()}
+ if(tt.presetType==='film01'||tt.presetType==='filmgrid'){
+  const left=46,right=w-83;
+  for(let y=130;y<h-80;y+=105){
+   ctx.fillStyle='#514d45';ctx.fillRect(left,y,28,55);ctx.fillRect(right,y,28,55);
+   ctx.strokeStyle='#070707';ctx.lineWidth=5;ctx.strokeRect(left,y,28,55);ctx.strokeRect(right,y,28,55);
+  }
+ }
+ if(tt.presetType==='birthday'){
+  ctx.save();ctx.globalAlpha=.24;
+  for(let i=0;i<80;i++){
+   const x=88+(i*197)%(w-176),y=125+(i*311)%(h-250);
+   ctx.fillStyle=['#c48c93','#a8a3c1','#ba9965','#698c99'][i%4];
+   ctx.fillRect(x,y,10+(i%4)*3,6+(i%3)*3);
+  }
+  ctx.restore();
+ }
  if(scene?.items)for(const item of scene.items.filter(it=>it.type==='sticker'&&it.kind==='filmrail')){
   const scale=Math.min(w/BASE_W,h/BASE_H)*.72;
   stickerDraw(ctx,{...item,x:item.x/BASE_W*w,y:item.y/BASE_H*h,w:item.w*scale,h:item.h*scale});
  }
  const slots=fmt.xy.map(([x,y])=>({x,y,w:fmt.pw,h:fmt.ph}));
  slots.forEach((slot,i)=>{
-  ctx.fillStyle='#090807';ctx.fillRect(slot.x-17,slot.y-18,slot.w+34,slot.h+36);
+  const pad=tt.presetType==='polaroid'?42:tt.presetType==='contact'?18:18;
+  ctx.fillStyle=style.frame;ctx.fillRect(slot.x-pad,slot.y-pad,slot.w+pad*2,slot.h+pad*2+(tt.presetType==='polaroid'?65:0));
+  ctx.strokeStyle=style.edge;ctx.lineWidth=3;ctx.strokeRect(slot.x-pad,slot.y-pad,slot.w+pad*2,slot.h+pad*2);
   drawSlot(ctx,slot,i,opts);
-  ctx.strokeStyle='#4a4037';ctx.lineWidth=4;ctx.strokeRect(slot.x-1,slot.y-1,slot.w+2,slot.h+2);
-  ctx.save();ctx.fillStyle='#c6a983';ctx.font='24px monospace';ctx.translate(slot.x-46,slot.y+slot.h-22);ctx.rotate(-Math.PI/2);ctx.fillText('◢  FOLIO 400  43 / 36 EXP',0,0);ctx.restore();
-  ctx.save();ctx.fillStyle='#c6a983';ctx.font='24px monospace';ctx.translate(slot.x+slot.w+46,slot.y+18);ctx.rotate(Math.PI/2);ctx.fillText('ORIGINAL NEGATIVE  '+String(i+1).padStart(2,'0'),0,0);ctx.restore();
+  ctx.strokeStyle=style.edge;ctx.lineWidth=3;ctx.strokeRect(slot.x,slot.y,slot.w,slot.h);
+  ctx.save();ctx.fillStyle=style.ink;ctx.font='23px monospace';
+  if(tt.presetType==='contact'){
+   ctx.fillText('43   PORTRA 400',slot.x,slot.y-26);
+   ctx.fillText('▶ 2',slot.x+slot.w*.40,slot.y+slot.h+35);
+  }else if(tt.presetType==='polaroid'){
+   ctx.fillText('MEMORY 0'+(i+1),slot.x+30,slot.y+slot.h+77);
+  }else{
+   ctx.translate(slot.x-44,slot.y+slot.h-20);ctx.rotate(-Math.PI/2);
+   ctx.fillText('◢  '+(tt.presetType==='filmgrid'?'UNFOLD 2010TX':'FOLIO 400')+'  43 / 36 EXP',0,0);
+  }
+  ctx.restore();
  });
- ctx.save();ctx.fillStyle='#ba9b76';ctx.font='25px monospace';ctx.textAlign='left';ctx.fillText('FOUR / FRAMES     FILM LAB  •  400 ISO',68,102);ctx.textAlign='right';ctx.fillText(fmt.w+' × '+fmt.h+'  /  '+fmt.count+' FRAMES',w-68,102);ctx.restore();
- // All variants reuse the same artwork; photo aperture geometry is format-specific.
+ ctx.save();ctx.fillStyle=style.ink;ctx.font='24px monospace';
+ ctx.textAlign='left';ctx.fillText(tt.presetId?(PRESET_BASES.find(p=>p.id===tt.presetId)?.name||'FOUR / FRAMES'):'FOUR / FRAMES  FILM LAB',60,99);
+ ctx.textAlign='right';ctx.fillText(fmt.w+'×'+fmt.h+' / '+fmt.count+' FRAMES',w-58,99);
+ if(tt.presetType==='birthday'){ctx.font='bold 36px Georgia';ctx.textAlign='center';ctx.fillText('HAPPY BIRTHDAY / MAKE A WISH',w/2,h-50);}
+ else {ctx.font='23px monospace';ctx.textAlign='left';ctx.fillText('ORIGINAL NEGATIVE / FILM LAB',66,h-54);}
+ ctx.restore();
  if(scene?.items)for(const item of scene.items){
   if(item.type==='photo'||(item.type==='sticker'&&item.kind==='filmrail'))continue;
-  const scale=Math.min(w/BASE_W,h/BASE_H)*.72,x=item.x/BASE_W*w,y=item.y>900?h-(BASE_H-item.y)*scale:item.y/BASE_H*h;
+  const scale=Math.min(w/BASE_W,h/BASE_H)*.72;
+  const x=item.x/BASE_W*w,y=item.y>900?h-(BASE_H-item.y)*scale:item.y/BASE_H*h;
   const mapped={...item,x,y,w:item.w*scale,h:item.h*scale,fontSize:(item.fontSize||34)*scale};
-  if(item.type==='text')drawTextItem(ctx,mapped);else if(item.type==='image')drawImageSticker(ctx,mapped);else stickerDraw(ctx,mapped);
+  if(item.type==='text')drawTextItem(ctx,mapped);
+  else if(item.type==='image')drawImageSticker(ctx,mapped);
+  else stickerDraw(ctx,mapped);
  }
  ctx.restore();
 }
@@ -425,10 +472,63 @@ function drawTemplate(ctx,tt,opts={}){if(tt.type==='series'){drawSeries(ctx,tt,o
 }
 function drawPoster(canvas,tt,opts={}){const c=canvas.getContext('2d',{alpha:false});if(!c)return;c.save();c.setTransform(canvas.width/BASE_W,0,0,canvas.height/BASE_H,0,0);drawTemplate(c,tt,opts);c.restore()}
 function drawFrame(now){if(now-app.lastFrame>=40){if(document.body.classList.contains('studio-on')){renderStudio()}else{drawPoster(preview,t())}app.lastFrame=now}requestAnimationFrame(drawFrame)}
-function createControls(){const tParent=$('templates'),sizeParent=$('formatGroup'),fParent=$('filters');for(const temp of templates.filter(item=>item.type!=='saved'&&item.type!=='custom'&&!item.familyId)){const b=document.createElement('button');b.className='template'+(temp.id===app.template?' active':'');b.dataset.id=temp.id;b.setAttribute('aria-pressed',temp.id===app.template);const thumb=document.createElement('canvas');thumb.width=144;thumb.height=192;thumb.className='thumb';b.appendChild(thumb);const n=document.createElement('span');n.className='template-name';n.textContent=temp.name;const sub=document.createElement('span');sub.className='template-sub';sub.textContent=temp.sub;b.append(n,sub);b.addEventListener('click',()=>selectTemplate(temp.id));(temp.type==='series'?sizeParent:tParent).appendChild(b);if(temp.outputW){thumb.width=160;thumb.height=Math.round(160*temp.outputH/temp.outputW)}drawPoster(thumb,temp,{thumbnail:true})}
- for(const filter of filters){const b=document.createElement('button');b.className='filter'+(filter.id===app.filter?' active':'');b.dataset.id=filter.id;b.setAttribute('aria-pressed',filter.id===app.filter);const sw=document.createElement('div');sw.className='swatch';sw.style.background=filter.swatch;const n=document.createElement('b');n.textContent=filter.name;const sub=document.createElement('small');sub.textContent=filter.sub;b.append(sw,n,sub);b.addEventListener('click',()=>selectFilter(filter.id));fParent.appendChild(b)}}
-function refreshActive(){document.querySelectorAll('.template').forEach(el=>{const v=el.dataset.id===app.template;el.classList.toggle('active',v);el.setAttribute('aria-pressed',v)});document.querySelectorAll('.filter').forEach(el=>{const v=el.dataset.id===app.filter;el.classList.toggle('active',v);el.setAttribute('aria-pressed',v)});for(const v of ['intensity','grain','leak']){$(v).value=app[v];$(v+'Val').textContent=app[v]+'%'}countStatus()}
-function selectTemplate(id){if(app.template===id)return;cancelCapture();app.template=id;const cfg=t();app.filter=cfg.filter;app.grain=cfg.grain;app.leak=cfg.leak;app.intensity=cfg.intensity??85;app.shots=[];refreshActive();renderMyDesigns();setMsg(`已切换「${cfg.name}」：绑定 ${f().name} 滤镜，重新开始拍摄。`)}
+function createControls(){
+ const tParent=$('templates'),fParent=$('filters');
+ for(const temp of PRESET_BASES){
+  const b=document.createElement('button');
+  b.className='template';b.dataset.id=temp.id;
+  const thumb=document.createElement('canvas');thumb.width=144;thumb.height=192;thumb.className='thumb';b.appendChild(thumb);
+  const n=document.createElement('span');n.className='template-name';n.textContent=temp.name;
+  const sub=document.createElement('span');sub.className='template-sub';sub.textContent=temp.sub;
+  b.append(n,sub);b.addEventListener('click',()=>selectTemplate(temp.id));tParent.appendChild(b);
+  drawPoster(thumb,temp,{thumbnail:true});
+ }
+ for(const filter of filters){
+  const b=document.createElement('button');b.className='filter';b.dataset.id=filter.id;
+  const sw=document.createElement('div');sw.className='swatch';sw.style.background=filter.swatch;
+  const n=document.createElement('b');n.textContent=filter.name;
+  const sub=document.createElement('small');sub.textContent=filter.sub;b.append(sw,n,sub);
+  b.addEventListener('click',()=>selectFilter(filter.id));fParent.appendChild(b);
+ }
+}
+function renderPresetFormats(){
+ const root=$('presetFormatOptions');root.replaceChildren();
+ const base=PRESET_BASES.find(p=>p.id===app.presetId)||PRESET_BASES[0];
+ $('selectedPresetName').textContent=base.name;
+ for(const [id,name,subtitle] of [
+   [base.id,'原始版','原有排版'],
+   ...FORMATS.map(fmt=>['preset-'+base.id+'-'+fmt.key,fmt.name,fmt.w+'×'+fmt.h])
+ ]){
+  const b=document.createElement('button');b.type='button';
+  b.className='preset-size-btn'+(app.template===id?' active':'');
+  b.setAttribute('aria-pressed',String(app.template===id));
+  const title=document.createElement('strong');title.textContent=name;
+  const size=document.createElement('small');size.textContent=subtitle;
+  b.append(title,size);b.addEventListener('click',()=>selectTemplate(id));root.appendChild(b);
+ }
+}
+function refreshActive(){
+ const curr=t(),highlight=curr?.presetId|| (PRESET_BASES.some(x=>x.id===app.template)?app.template:null);
+ document.querySelectorAll('.template').forEach(el=>{
+  const v=!!highlight&&el.dataset.id===highlight;el.classList.toggle('active',v);el.setAttribute('aria-pressed',String(v))
+ });
+ document.querySelectorAll('.filter').forEach(el=>{
+  const v=el.dataset.id===app.filter;el.classList.toggle('active',v);el.setAttribute('aria-pressed',String(v))
+ });
+ for(const v of ['intensity','grain','leak']){$(v).value=app[v];$(v+'Val').textContent=app[v]+'%'}
+ renderPresetFormats();countStatus();
+}
+function selectTemplate(id){
+ if(app.template===id)return;
+ const cfg=templates.find(x=>x.id===id);if(!cfg)return;
+ cancelCapture();app.template=id;
+ if(cfg.presetId)app.presetId=cfg.presetId;
+ else if(PRESET_BASES.some(x=>x.id===id))app.presetId=id;
+ app.filter=cfg.filter;app.grain=cfg.grain;app.leak=cfg.leak;app.intensity=cfg.intensity??85;
+ app.shots=[];refreshActive();renderMyDesigns();
+ setMsg('已切换「'+cfg.name+'」：'+cfg.count+' 格 · '+f().name+' 滤镜，重新开始拍摄。');
+}
+
 function selectFilter(id){app.filter=id;refreshActive();setMsg(`已切换为 ${f().name}，取景器与最终照片同步更新。`)}
 async function listDevices(){if(!navigator.mediaDevices?.enumerateDevices)return;try{const all=await navigator.mediaDevices.enumerateDevices(),devs=all.filter(x=>x.kind==='videoinput'),sel=$('deviceSelect'),current=app.deviceId;sel.replaceChildren(new Option('默认',''));devs.forEach((d,i)=>sel.add(new Option(d.label||`摄像头 ${i+1}`,d.deviceId)));sel.value=devs.some(d=>d.deviceId===current)?current:''}catch(e){}}
 async function startCamera(deviceId=''){
