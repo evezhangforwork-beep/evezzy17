@@ -151,6 +151,29 @@ body:not(.studio-on) .my-design-section{margin-top:12px}
  body:not(.studio-on) .side{height:auto;overflow:visible;padding-right:0}
 }
 
+
+/* Edition 05: template-level size variants and a single-size personal editor */
+.preset-size-box{background:#2b2017;border:1px solid #8c603d;padding:13px;margin-top:12px;border-radius:3px}
+.preset-size-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.preset-size-head strong{font:14px 'Special Elite',monospace;color:#efcb9b}
+.preset-size-head span{font:10px 'Special Elite',monospace;color:#b3a08d}
+.preset-variant-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.preset-size-btn{border:1px solid #715037;background:#241b15;color:#e7c6a0;cursor:pointer;padding:10px 4px 8px;min-width:0;display:grid;place-content:center;gap:5px;min-height:60px}
+.preset-size-btn:hover{background:#503523}
+.preset-size-btn.active{background:#b78957;color:#1d140c;border-color:#e8b97c}
+.preset-size-btn strong{font-size:10px;white-space:nowrap}
+.preset-size-btn small{font:9px 'Special Elite',monospace;white-space:normal;line-height:1.2}
+.studio-size-label{font:11px 'Special Elite',monospace;color:#eac9a0;display:flex;align-items:center;gap:7px}
+.studio-size-label select{background:#f5e8d5;border:1px solid #c9a47a;color:#422b1b;padding:8px 4px;max-width:170px;font:11px 'Special Elite',monospace}
+.studio-group-note strong{color:#ffe3b4;font-weight:700}
+#studioSizeHint{display:block;color:#bda183;margin-top:4px}
+.editor-canvas{aspect-ratio:auto}
+@media(max-width:650px){
+ .preset-variant-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .studio-size-label{flex:1 1 100%;justify-content:space-between}
+ .studio-size-label select{max-width:70%;flex:1}
+}
+
   </style>
 </head>
 <body>
@@ -177,16 +200,22 @@ body:not(.studio-on) .my-design-section{margin-top:12px}
       <aside class="side">
         <div class="eyebrow" style="margin-top:8px">FILM CAMERA / EXPERIMENT 01</div>
         <h1 class="side-title">把生活拍成<br/><em style="font-style:italic;color:var(--accent)">一卷旧胶片。</em></h1>
-        <p class="intro">左侧取景器与快门固定，右侧独立滚动。四种尺寸共享菲林边框、贴纸、文字和滤镜。</p>
+        <p class="intro">左侧固定取景与拍摄；右侧选择复古相纸及尺寸。你也可以在设计台单独指定自己的画布比例。</p>
          <section class="capture-gallery" aria-label="已拍照片"><div class="section-heading"><h2>已拍照片 / CAPTURED</h2><span id="capturedCount">0 SHOTS</span></div><div id="capturedShots" class="capture-gallery-grid"><div class="capture-gallery-empty">按下左侧快门，照片会出现在这里</div></div></section>
         <section class="my-design-section" aria-label="我的设计">
           <div class="section-heading"><h2>✦ MY COLLECTION / 我的设计</h2><span id="myDesignCount">0 SAVED</span></div>
-          <div class="collection-intro">在模板设计台点击「保存模板」，你的作品就会出现在这里，直接选用拍照。</div>
+          <div class="collection-intro">设计台可以自由选择画布尺寸。每次保存一款独立设计，不会强制生成四种尺寸。</div>
           <div id="myDesigns" class="my-design-grid"></div>
           <button id="newDesignFromCamera" class="collection-add" type="button">＋ 新建设计 / OPEN ATELIER</button>
         </section>
-        <section class="section"><div class="section-heading"><h2>01 / 同一系列 · 四种尺寸</h2><span>4 FORMATS</span></div><p class="size-explain">共享胶片底色、贴纸与文字，只重排照片框。导出时使用准确的画布像素尺寸。</p><div id="formatGroup" class="template-list series-list"></div></section>
-         <section class="section"><div class="section-heading"><h2>02 / 其他复古相纸</h2><span>ORIGINAL SERIES</span></div><div id="templates" class="template-list"></div></section>
+        <section class="section"><div class="section-heading"><h2>02 / 其他复古相纸</h2><span>7 FILM STYLES</span></div>
+          <p class="size-explain">先选择复古相纸风格，再选原版排版或四种照片尺寸。每种尺寸都继承该模板的滤镜和胶片视觉。</p>
+          <div id="templates" class="template-list"></div>
+          <div class="preset-size-box" aria-label="复古相纸尺寸">
+            <div class="preset-size-head"><strong id="selectedPresetName">PORTRA CONTACT</strong><span>选择此风格的尺寸</span></div>
+            <div id="presetFormatOptions" class="preset-variant-grid"></div>
+          </div>
+        </section>
         <section class="section"><div class="section-heading"><h2>02 / 选择复古滤镜</h2><span>7 COLOR LOOKS</span></div><div id="filters" class="filters"></div></section>
         <section class="sliders" aria-label="滤镜参数"><div class="slider-row"><label for="intensity">调色强度</label><input type="range" id="intensity" min="0" max="100" value="85"/><output id="intensityVal">85%</output></div><div class="slider-row"><label for="grain">胶片颗粒</label><input type="range" id="grain" min="0" max="100" value="54"/><output id="grainVal">54%</output></div><div class="slider-row"><label for="leak">胶片漏光</label><input type="range" id="leak" min="0" max="100" value="26"/><output id="leakVal">26%</output></div></section>
         <p class="footer-tip"><b>本地隐私：</b>摄像头画面只在浏览器内处理，不会上传到服务器。建议在 Chrome / Edge / Safari 的安全环境（localhost 或 HTTPS）打开。这里的复古调色是可交互的演示算法，尚未替换为最终产品级的 3D LUT GPU 管线。</p>
@@ -212,11 +241,11 @@ body:not(.studio-on) .my-design-section{margin-top:12px}
         <button id="addText" class="toolbtn" type="button">T＋ 文字</button>
         <button id="undoStudio" class="toolbtn" type="button" title="撤销最近一次编辑">↶ 撤销</button>
         <button id="redoStudio" class="toolbtn" type="button" title="重做">↷ 重做</button>
-        <span class="toolbar-spacer"></span><label class="design-name-label">作品名称 <input id="designName" maxlength="32" value="我的复古相纸" aria-label="模板作品名称"/></label><button id="saveToCollection" class="toolbtn save-design" type="button">✦ 保存模板</button>
+        <span class="toolbar-spacer"></span><label class="studio-size-label">画布尺寸 <select id="studioCanvasSize" aria-label="自定义相纸尺寸"></select></label><label class="design-name-label">作品名称 <input id="designName" maxlength="32" value="我的复古相纸" aria-label="模板作品名称"/></label><button id="saveToCollection" class="toolbtn save-design" type="button">✦ 保存模板</button>
         <button id="applyStudio" class="toolbtn gold" type="button">◉ 使用模板拍照</button>
       </div>
-      <div class="studio-group-note">✦ 共享设计模式：修改这里的贴纸、文字、底纸及色调后，保存时自动生成四种画布尺寸。照片框按照各尺寸的固定布局排列。</div><div class="design-stage"><canvas id="editorCanvas" class="editor-canvas" width="900" height="1200" aria-label="可拖拽编辑的四格模板画布"></canvas></div>
-      <div class="stage-help"><span>单击选择 / 拖拽移动 / 右下缩放 / 顶部圆点旋转</span><span>DELETE / 方向键</span></div><div id="studioFormatPreviews" class="studio-format-previews" aria-label="共享设计四尺寸预览"></div>
+      <div class="studio-group-note"><strong>单尺寸自由设计</strong> · 先选择画布比例，再布置照片框、贴纸、文字和滤镜。保存时只保存当前尺寸；切换尺寸会重新排列照片框，装饰素材继续保留。<span id="studioSizeHint"></span></div><div class="design-stage"><canvas id="editorCanvas" class="editor-canvas" width="900" height="1200" aria-label="可拖拽编辑的四格模板画布"></canvas></div>
+      <div class="stage-help"><span>单击选择 / 拖拽移动 / 右下缩放 / 顶部圆点旋转</span><span id="studioSelectedSize">1800 × 2400 · 3:4</span></div>
       <div class="editor-toolbar" style="margin-top:12px;margin-bottom:0"><button id="exportDesign" class="toolbtn gold" type="button">↓ 导出效果 PNG</button><button id="exportJSON" class="toolbtn" type="button">↓ 导出模板 JSON</button><button id="importJSON" class="toolbtn" type="button">↑ 导入模板</button><input id="importJSONFile" type="file" accept=".json,application/json" hidden/><button id="resetDesign" class="toolbtn" type="button">↺ 恢复初始设计</button></div>
     </div>
     <aside class="studio-panel props-panel"><div class="studio-panel-head"><h3>02 / 图层与参数</h3><small>PROPERTY INSPECTOR</small></div>
@@ -254,7 +283,6 @@ const FORMATS=[
 ];
 const FORMAT_BY_KEY=Object.fromEntries(FORMATS.map(x=>[x.key,x]));
 const templates=[
- ...FORMATS.map(fmt=>({id:'series-'+fmt.key,name:fmt.name,sub:fmt.w+' × '+fmt.h,filter:'sepia',intensity:80,grain:63,leak:24,type:'series',format:fmt.key,count:fmt.count,outputW:fmt.w,outputH:fmt.h})),
   {id:'portra',name:'PORTRA CONTACT',sub:'奶油黑白 · 4格',filter:'monoSoft',grain:55,leak:8,type:'contact',count:4},
   {id:'expired',name:'EXPIRED 400',sub:'老相纸 · 单幅',filter:'sepia',grain:83,leak:55,type:'expired',count:1},
   {id:'film01',name:'FILM 01',sub:'电影条幅 · 3格',filter:'cinema',grain:43,leak:27,type:'film01',count:3},
@@ -263,6 +291,18 @@ const templates=[
   {id:'polaroid',name:'POLAROID',sub:'拍立得 · 4格',filter:'mono',grain:61,leak:9,type:'polaroid',count:4},
   {id:'filmgrid',name:'FILM GRID',sub:'复古电影 · 4格',filter:'amber',grain:36,leak:23,type:'filmgrid',count:4},
 ];
+const DESIGN_SIZES=[
+ ...FORMATS.map(x=>({key:x.key,name:x.name,w:x.w,h:x.h,count:x.count})),
+ {key:'square',name:'1:1 方形',w:2000,h:2000,count:4},
+ {key:'portrait34',name:'3:4 竖版',w:1800,h:2400,count:4},
+ {key:'portrait45',name:'4:5 竖版',w:2000,h:2500,count:4},
+ {key:'story916',name:'9:16 长图',w:1440,h:2560,count:4}
+];
+const DESIGN_BY_KEY=Object.fromEntries(DESIGN_SIZES.map(x=>[x.key,x]));
+const PRESET_BASES=[...templates];
+for(const base of PRESET_BASES)for(const fmt of FORMATS){
+ templates.push({id:'preset-'+base.id+'-'+fmt.key,name:base.name+' · '+fmt.name,sub:fmt.w+' × '+fmt.h,presetId:base.id,presetType:base.type,type:'series',format:fmt.key,count:fmt.count,filter:base.filter,grain:base.grain,leak:base.leak,intensity:85,outputW:fmt.w,outputH:fmt.h});
+}
 const filters=[
   {id:'portra',name:'SOFT PORTRA',sub:'暖肤色 / 低饱和',saturation:.77,contrast:.93,brightness:1.04,sepia:.20,grayscale:0,hue:-3,tint:'#e6b392',swatch:'linear-gradient(120deg,#322720,#bd926a,#ece0c2)'},
   {id:'mono',name:'SILVER GRAIN',sub:'黑白 / 高反差',saturation:0,contrast:1.24,brightness:1.04,sepia:0,grayscale:1,hue:0,tint:'#ece4d7',swatch:'linear-gradient(120deg,#242322,#85827b,#f0f0e8)'},
@@ -272,7 +312,7 @@ const filters=[
   {id:'amber',name:'AMBER FILM',sub:'夕阳 / 暖橘 / 暗角',saturation:.88,contrast:1.11,brightness:.98,sepia:.41,grayscale:0,hue:-8,tint:'#cf8b51',swatch:'linear-gradient(120deg,#321b13,#a3683f,#f6d08c)'},
   {id:'flash',name:'PARTY FLASH',sub:'闪光灯 / 复古',saturation:1.12,contrast:1.22,brightness:1.05,sepia:.15,grayscale:0,hue:2,tint:'#e7ae86',swatch:'linear-gradient(120deg,#1b2e34,#a786a2,#efd6a4)'},
 ];
-const app={template:'series-strip4',filter:'sepia',intensity:80,grain:63,leak:24,mirror:true,shots:[],stream:null,deviceId:'',busy:false,lastFrame:0,timer:false};
+const app={template:'portra',presetId:'portra',filter:'monoSoft',intensity:85,grain:55,leak:8,mirror:true,shots:[],stream:null,deviceId:'',busy:false,lastFrame:0,timer:false};
 let captureGeneration=0;
 const preview=$('preview'),video=$('camera');let noiseTile=null,streamGeneration=0;
 function t(){return templates.find(x=>x.id===app.template)}
