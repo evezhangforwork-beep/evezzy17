@@ -891,17 +891,40 @@ document.addEventListener('keydown',e=>{if(!document.body.classList.contains('st
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();historyApply(e.shiftKey?1:-1);return}
  if(e.key==='Escape'){chooseLayer(null);return}if(['Delete','Backspace'].includes(e.key)){e.preventDefault();$('deleteLayer').click();return}
  const it=getSelected();if(it&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const n=e.shiftKey?10:1;it.x+=(e.key==='ArrowRight'?n:e.key==='ArrowLeft'?-n:0);it.y+=(e.key==='ArrowDown'?n:e.key==='ArrowUp'?-n:0);rememberStudio();refreshInspector();renderStudio()}});
-$('resetDesign').addEventListener('click',()=>{if(!confirm('恢复初始模板？目前的自定义设计会被覆盖。'))return;studio=studioSeed();selectedId='p1';rememberStudio();refreshStudioConfig();refreshInspector();renderStudio();studioStatus('已恢复参考图风格的初始布局。')});
+$('resetDesign').addEventListener('click',()=>{
+ if(!confirm('恢复当前尺寸的初始设计？自定义图层会被覆盖。'))return;
+ const key=studio.canvasKey;studio=studioSeed();
+ if(key!=='portrait34'){
+  const rails=studio.items.filter(it=>it.type==='sticker'&&it.kind==='filmrail');
+  const rest=studio.items.filter(it=>it.type!=='photo'&&!(it.type==='sticker'&&it.kind==='filmrail'));
+  const h=studioLogicalHeight({canvasKey:key});
+  rails.forEach(it=>{it.h=h-155});
+  rest.forEach(it=>{it.y=Math.round(it.y*h/BASE_H)});
+  studio.items=[...rails,...studioRecommendedFrames(key),...rest];studio.canvasKey=key;
+ }
+ selectedId=studio.items.find(x=>x.type==='photo')?.id||null;
+ rememberStudio();refreshStudioConfig();refreshInspector();renderStudio();
+ studioStatus('已恢复 '+studioSize().name+' 的初始布局。');
+});
 function studioDownload(filename,data,type){const blob=data instanceof Blob?data:new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}
-$('exportDesign').addEventListener('click',()=>{const c=document.createElement('canvas');c.width=1800;c.height=2400;const ctx=c.getContext('2d');ctx.scale(2,2);renderCustomScene(ctx);c.toBlob(b=>{if(b){studioDownload('my-film-collage.png',b);studioStatus('已导出 1800 × 2400 PNG。')}})});
-$('exportJSON').addEventListener('click',()=>{studioDownload('my-film-template.json',JSON.stringify({version:2,...studio},null,2),'application/json');studioStatus('已导出可重新编辑的模板 JSON（不包含用户照片）。')});
+$('exportDesign').addEventListener('click',()=>{
+ const size=studioSize(),c=document.createElement('canvas');c.width=size.w;c.height=size.h;
+ const ctx=c.getContext('2d');
+ ctx.setTransform(c.width/BASE_W,0,0,c.height/studioLogicalHeight(),0,0);
+ renderCustomScene(ctx);
+ c.toBlob(b=>{if(b){studioDownload('my-film-collage-'+size.key+'.png',b);studioStatus('已导出 '+size.w+' × '+size.h+' PNG。')}},'image/png');
+});
+$('exportJSON').addEventListener('click',()=>{studioDownload('my-film-template.json',JSON.stringify({version:3,...studio},null,2),'application/json');studioStatus('已导出可重新编辑的模板 JSON（不包含用户照片）。')});
 $('importJSON').addEventListener('click',()=>$('importJSONFile').click());
 $('importJSONFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());studio=normalizeStudio(data);selectedId=studio.items[0]?.id||null;rememberStudio();refreshStudioConfig();refreshInspector();renderStudio();studioStatus('模板导入成功。')}catch(err){studioStatus('模板导入失败：'+err.message)}e.target.value=''});
 refreshStudioConfig();refreshInspector();
 // Insert custom choice before initial UI generation. Shared rendering and capture engine.
 
 // drawTemplate() delegates to renderCustomScene() for this template (patched below).
-createControls();refreshActive();renderMyDesigns();buildStudioFormatPreviews();
+for(const size of DESIGN_SIZES){
+ $('studioCanvasSize').add(new Option(size.name+' · '+size.w+'×'+size.h,size.key));
+}
+syncEditorSize();createControls();refreshActive();renderMyDesigns();
 
 requestAnimationFrame(drawFrame);
 // Browser permission prompts are managed by the browser, and usually remembered per origin.
